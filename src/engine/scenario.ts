@@ -23,6 +23,10 @@ export interface ScenarioVarSpec {
   intermediate?: boolean;
   /** Value assumed (and clearly reported) only if the problem cannot be solved without it. SI units. */
   assume?: { value: number; note: string };
+  /** Free-text matching: bonus/penalty from the SI magnitude of a candidate value. */
+  valueHint?: (si: number) => number;
+  /** Free-text matching: preferred variable for an otherwise-unmatched value of this kind. */
+  primary?: boolean;
 }
 
 export interface RelationSpec {
@@ -80,6 +84,8 @@ export interface ResolvedVar {
   hint?: string;
   intermediate: boolean;
   assume?: { value: number; note: string };
+  valueHint?: (si: number) => number;
+  primary: boolean;
 }
 
 export interface ResolvedRelation {
@@ -127,6 +133,8 @@ export function resolveScenario(s: Scenario): ResolvedScenario {
       hint: spec?.hint,
       intermediate: spec?.intermediate ?? false,
       assume: spec?.assume,
+      valueHint: spec?.valueHint,
+      primary: spec?.primary ?? false,
     };
     order.push(key);
   };

@@ -163,8 +163,8 @@ export const M8_SCENARIOS: Scenario[] = [
       { key: 'u1', cues: ['initial velocity', 'moving at', 'speed of', 'travelling at'] },
       { key: 'm2', cues: ['target', 'nucleus', 'proton', 'nitrogen', 'hydrogen'] },
       { key: 'u2', cues: ['initially at rest', 'stationary'], signed: true, assume: { value: 0, note: 'Target initially at rest.' } },
-      { key: 'v1', cues: ['after the collision', 'rebounds'], signed: true },
-      { key: 'v2', cues: ['recoil', 'recoils', 'knocked', 'ejected'], signed: true },
+      { key: 'v1', name: 'final velocity of the incoming particle', cues: ['neutron after', 'rebounds', 'incoming particle after', 'bounces back'], signed: true },
+      { key: 'v2', name: 'final velocity of the target', cues: ['recoil', 'recoils', 'knocked', 'ejected', 'nucleus after', 'of the nucleus', 'of the target', 'nitrogen', 'hydrogen nucleus', 'proton after', 'struck', 'target'], signed: true },
     ],
     relations: [
       { f: 'elastic_target', why: 'Head-on elastic collision with a stationary target.', priority: 1 },
@@ -225,12 +225,12 @@ export const M8_SCENARIOS: Scenario[] = [
       { key: 'Z', cues: ['protons', 'atomic number', 'z ='] },
       { key: 'N', cues: ['neutrons', 'n ='] },
       { key: 'A', cues: ['nucleons', 'mass number', 'a ='] },
-      { key: 'mnuc', cues: ['mass of the nucleus', 'nuclear mass', 'mass of a', 'mass of', 'has a mass', 'nucleus has'] },
+      { key: 'mnuc', cues: ['mass of the nucleus', 'nuclear mass', 'nucleus is', 'nucleus has', 'nucleus', 'mass of a', 'mass of', 'has a mass'] },
       { key: 'dm', cues: ['mass defect'] },
       { key: 'EB', cues: ['binding energy'] },
       { key: 'EBA', cues: ['per nucleon'] },
-      { key: 'mp', advanced: true },
-      { key: 'mn', advanced: true },
+      { key: 'mp', advanced: true, cues: ['mass of a proton', 'mass of the proton', 'proton mass', 'proton is', 'protons'] },
+      { key: 'mn', advanced: true, cues: ['mass of a neutron', 'mass of the neutron', 'neutron mass', 'neutron is', 'neutrons'] },
     ],
     relations: [
       { f: 'nucleons' },
@@ -244,8 +244,11 @@ export const M8_SCENARIOS: Scenario[] = [
     postNotes: (v) => {
       if (v.dm === undefined) return [];
       const u = 1.661e-27;
+      const warn = Math.abs(v.mp - 1.673e-27) < 1e-35 || Math.abs(v.mn - 1.675e-27) < 1e-35
+        ? ['Caution: the data-sheet proton and neutron masses (4 significant figures) were used. Mass defects are small differences of large numbers, so this can shift the binding energy by ~2%. If the question supplies nucleon masses (e.g. in u), enter those instead.']
+        : [];
       const alt = (v.dm / u) * 931.5;
-      return [`Alternative method (data sheet): Δm = ${(v.dm / u).toPrecision(5)} u × 931.5 MeV/u = ${alt.toPrecision(4)} MeV. Both methods are accepted; they differ slightly because the data-sheet constants are rounded.`];
+      return [...warn, `Alternative method (data sheet): Δm = ${(v.dm / u).toPrecision(5)} u × 931.5 MeV/u = ${alt.toPrecision(4)} MeV. Both methods are accepted; they differ slightly because the data-sheet constants are rounded.`];
     },
   },
   {
@@ -280,10 +283,10 @@ export const M8_SCENARIOS: Scenario[] = [
     title: 'Radioactive decay and half-life',
     blurb: 'Nₜ = N₀e^(−λt), λ = ln2/t½, number of half-lives, activity A = λN. Works for nuclei, mass or activity.',
     vars: [
-      { key: 'N0', name: 'initial amount', cues: ['initial', 'initially', 'originally', 'starts with', 'sample of', 'contains', 'begins with'] },
-      { key: 'Nt', name: 'amount remaining', cues: ['remain', 'remaining', 'left', 'after', 'decreased to', 'falls to'] },
+      { key: 'N0', name: 'initial amount', cues: ['initial', 'initially', 'originally', 'starts with', 'sample of', 'sample has', 'has a mass of', 'mass of', 'contains', 'begins with', 'initial activity', 'activity of', 'sample', 'from', 'falls from', 'drops from'] },
+      { key: 'Nt', name: 'amount remaining', cues: ['remain', 'remaining', 'left', 'after', 'decreased to', 'falls to', 'drops to', 'to'] },
       { key: 'thalf', cues: ['half-life', 'half life', 'halflife'] },
-      { key: 't', name: 'elapsed time', cues: ['after', 'time', 'elapsed', 'how long', 'years later', 'days later'] },
+      { key: 't', name: 'elapsed time', cues: ['after', 'time', 'elapsed', 'how long', 'years later', 'days later', 'in', 'over', 'period of', 'within'] },
       { key: 'lam', cues: ['decay constant'] },
       { key: 'n', name: 'number of half-lives', cues: ['half-lives', 'number of half'] },
       { key: 'A', name: 'activity', cues: ['activity', 'becquerel', 'bq', 'decays per second'], advanced: true },

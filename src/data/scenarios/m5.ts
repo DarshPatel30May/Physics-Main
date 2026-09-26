@@ -2,6 +2,9 @@ import type { Scenario } from '../../engine/scenario';
 
 const D = Math.PI / 180;
 
+const PLANET_MASS_CUES = ['mass of the planet', 'mass of the earth', 'mass of earth', 'planet of mass', 'mass of the moon', 'mass of mars', 'mass of the sun', 'mass of jupiter', 'star of mass', 'planet has a mass', 'has a mass of', 'central body', 'mars has', 'earth has', 'moon has', 'jupiter has', 'sun has', 'planet has', 'the planet', 'the star'];
+const OBJECT_MASS_CUES = ['satellite of mass', 'mass of the satellite', 'object of mass', 'spacecraft of mass', 'probe of mass', 'satellite', 'spacecraft', 'probe', 'astronaut', 'rocket', 'object', 'person', 'student', 'kg satellite'];
+
 export const M5_SCENARIOS: Scenario[] = [
   {
     id: 'projectile', topic: 'projectile', module: 5,
@@ -10,7 +13,7 @@ export const M5_SCENARIOS: Scenario[] = [
     convention: 'Taking UP and the direction of horizontal launch as POSITIVE: aₓ = 0 and a_y = −g. Δy is measured from the launch point (landing below the launch point ⇒ Δy < 0).',
     assumptions: ['Air resistance is negligible.', 'g is constant (uniform field near the surface).'],
     vars: [
-      { key: 'u', cues: ['launched at', 'launched with', 'initial velocity', 'initial speed', 'thrown at', 'thrown with', 'kicked at', 'kicked with', 'fired at', 'fired with', 'projected at', 'projected with', 'hit at', 'struck at', 'launch speed', 'speed of', 'velocity of', 'leaves', 'at a speed', 'with a speed', 'with a velocity', 'horizontally at', 'rolls off'] },
+      { key: 'u', primary: true, cues: ['at', 'launched at', 'launched with', 'initial velocity', 'initial speed', 'thrown at', 'thrown with', 'kicked at', 'kicked with', 'fired at', 'fired with', 'projected at', 'projected with', 'hit at', 'struck at', 'launch speed', 'speed of', 'velocity of', 'leaves', 'at a speed', 'with a speed', 'with a velocity', 'horizontally at', 'rolls off'] },
       { key: 'theta', cues: ['above the horizontal', 'to the horizontal', 'launch angle', 'angle of', 'elevation', 'at an angle', 'below the horizontal'], signed: true },
       { key: 'sy', symbol: '\\Delta y', name: 'vertical displacement (landing relative to launch)', cues: ['high', 'height', 'cliff', 'building', 'tower', 'above the ground', 'table', 'bench', 'below', 'vertical displacement', 'drops', 'falls'], signed: true },
       { key: 'sx', symbol: '\\Delta x', name: 'horizontal displacement', cues: ['range', 'horizontal distance', 'how far', 'from the base', 'horizontally', 'away', 'horizontal displacement', 'distance'] },
@@ -155,8 +158,8 @@ export const M5_SCENARIOS: Scenario[] = [
     blurb: 'Newton’s law of universal gravitation, g = GM/r², weight, altitude → radius, U = −GMm/r and escape velocity.',
     assumptions: ['Spherical bodies treated as point masses at their centres.'],
     vars: [
-      { key: 'M', name: 'mass of planet / central body', cues: ['mass of the planet', 'mass of earth', 'planet of mass', 'mass of the moon', 'mass of mars', 'mass of the sun', 'star of mass', 'planet has a mass', 'mass of jupiter', 'central'] },
-      { key: 'm', name: 'mass of object/satellite', cues: ['satellite of mass', 'mass of the satellite', 'object of mass', 'probe', 'astronaut', 'spacecraft of mass', 'mass of', 'kg'] },
+      { key: 'M', name: 'mass of planet / central body', cues: PLANET_MASS_CUES, valueHint: (x) => (x > 1e20 ? 6 : -8) },
+      { key: 'm', name: 'mass of object/satellite', cues: OBJECT_MASS_CUES, valueHint: (x) => (x < 1e16 ? 2 : -8) },
       { key: 'R', name: 'radius of planet', cues: ['radius of the planet', 'radius of earth', 'planet of radius', 'radius of', 'radius'] },
       { key: 'h', name: 'altitude above surface', cues: ['altitude', 'above the surface', 'above the earth', 'height above', 'above the planet'] },
       { key: 'r', name: 'distance from centre', cues: ['from the centre', 'distance between', 'separation', 'orbital radius', 'from the center', 'apart'] },
@@ -184,8 +187,8 @@ export const M5_SCENARIOS: Scenario[] = [
     blurb: 'Orbital speed, period, radius, altitude, forces and energy. Uses F_g = F_c ⇒ v = √(GM/r) and Kepler’s third law.',
     assumptions: ['Circular orbit.', 'Gravity is the only force and provides the centripetal force.'],
     vars: [
-      { key: 'M', name: 'mass of central body', cues: ['mass of the planet', 'mass of earth', 'planet of mass', 'mass of the sun', 'mass of mars', 'mass of jupiter', 'star of mass', 'central body', 'planet has a mass'] },
-      { key: 'm', name: 'mass of satellite', cues: ['satellite of mass', 'mass of the satellite', 'spacecraft of mass', 'probe of mass', 'kg satellite', 'mass of'] },
+      { key: 'M', name: 'mass of central body', cues: PLANET_MASS_CUES, valueHint: (x) => (x > 1e20 ? 6 : -8) },
+      { key: 'm', name: 'mass of satellite', cues: OBJECT_MASS_CUES, valueHint: (x) => (x < 1e16 ? 2 : -8) },
       { key: 'R', name: 'radius of central body', cues: ['radius of the planet', 'radius of earth', 'planet of radius', 'radius of'] },
       { key: 'h', name: 'altitude above surface', cues: ['altitude', 'above the surface', 'above the earth', 'height above', 'above the planet', 'orbits at a height'] },
       { key: 'r', name: 'orbital radius (from centre)', cues: ['orbital radius', 'radius of orbit', 'from the centre', 'from the center', 'radius', 'distance'] },
@@ -223,11 +226,11 @@ export const M5_SCENARIOS: Scenario[] = [
     title: 'Changing orbits — energy required',
     blurb: 'Total energy E = −GMm/2r in each orbit, ΔE to move between orbits, ΔU between radii, and each orbit’s speed and period.',
     vars: [
-      { key: 'M', cues: ['mass of the planet', 'mass of earth', 'planet of mass', 'mass of the sun'] },
-      { key: 'm', cues: ['satellite of mass', 'mass of the satellite', 'spacecraft of mass', 'mass of'] },
+      { key: 'M', cues: PLANET_MASS_CUES, valueHint: (x) => (x > 1e20 ? 6 : -8) },
+      { key: 'm', cues: OBJECT_MASS_CUES, valueHint: (x) => (x < 1e16 ? 2 : -8) },
       { key: 'R', cues: ['radius of the planet', 'radius of earth', 'radius of'] },
-      { key: 'h1', symbol: 'h_1', name: 'initial altitude', cues: ['initial altitude', 'from an altitude', 'lower orbit', 'initially'] },
-      { key: 'h2', symbol: 'h_2', name: 'final altitude', cues: ['final altitude', 'to an altitude', 'higher orbit', 'new orbit'] },
+      { key: 'h1', symbol: 'h_1', name: 'initial altitude', cues: ['initial altitude', 'from an altitude', 'from an orbit', 'from a', 'from', 'lower orbit', 'initially', 'initial orbit'], primary: true },
+      { key: 'h2', symbol: 'h_2', name: 'final altitude', cues: ['final altitude', 'to an altitude', 'to a higher orbit', 'to an orbit', 'higher orbit', 'new orbit', 'to a', 'to'] },
       { key: 'r1', cues: ['initial orbital radius', 'initial radius'] },
       { key: 'r2', cues: ['final orbital radius', 'final radius'] },
       { key: 'dE', symbol: '\\Delta E', name: 'energy required (change in total energy)', cues: ['energy required', 'energy needed', 'work required', 'change in total energy', 'minimum energy'] },
