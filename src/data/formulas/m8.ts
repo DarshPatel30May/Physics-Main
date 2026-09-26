@@ -107,7 +107,7 @@ export const M8_FORMULAS: Formula[] = [
     equation: '\\frac{1}{\\lambda} = R\\left(\\frac{1}{n_f^2} - \\frac{1}{n_i^2}\\right)',
     vars: { lambda: V('\\lambda', 'wavelength of emitted/absorbed photon', 'length', { sample: lamS }), R: V('R', 'Rydberg constant', 'inverseLength', { constant: 'R' }), nf: V('n_f', 'final (lower) energy level', 'count', { integer: true, sample: [1, 3] }), ni: V('n_i', 'initial (higher) energy level', 'count', { integer: true, sample: [4, 7] }) },
     solve: {
-      lambda: '1/(R*(1/nf^2 - 1/ni^2))',
+      lambda: { exprs: ['1/(R*abs(1/nf^2 - 1/ni^2))'], note: 'The absolute value covers both emission (nᵢ > n_f) and absorption (nᵢ < n_f).' },
       ni: { exprs: ['1/sqrt(1/nf^2 - 1/(R*lambda))'], note: 'n must be a whole number — the result is checked for rounding.' },
       nf: { exprs: ['1/sqrt(1/(R*lambda) + 1/ni^2)'], note: 'n must be a whole number.' },
     },

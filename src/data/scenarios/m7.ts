@@ -40,7 +40,7 @@ export const M7_SCENARIOS: Scenario[] = [
     blurb: 'n₁ sin θ₁ = n₂ sin θ₂, n = c/v, wavelength in a medium, and critical angle.',
     assumptions: ['Angles measured from the normal.'],
     vars: [
-      { key: 'n1', cues: ['refractive index of', 'from', 'air', 'medium 1', 'incident medium'] },
+      { key: 'n1', cues: ['from', 'medium 1', 'incident medium', 'travelling in'], assume: { value: 1.0, note: 'First medium taken as air (n₁ = 1.00).' } },
       { key: 'th1', cues: ['angle of incidence', 'incident at', 'strikes', 'incidence'] },
       { key: 'n2', cues: ['refractive index', 'into', 'glass', 'water', 'medium 2', 'index of'] },
       { key: 'th2', cues: ['angle of refraction', 'refracted at', 'refraction'] },
@@ -140,10 +140,10 @@ export const M7_SCENARIOS: Scenario[] = [
     title: 'Polarisation — Malus’ law',
     blurb: 'I = I_max cos²θ, including unpolarised light through a first polariser (halved).',
     vars: [
-      { key: 'I0', name: 'unpolarised incident intensity', cues: ['unpolarised'] },
+      { key: 'I0', name: 'unpolarised incident intensity', cues: ['unpolarised', 'unpolarised light of intensity', 'unpolarized light of intensity', 'unpolarised light with an intensity', 'unpolarised light of'] },
       { key: 'Imax', name: 'polarised intensity incident on analyser', cues: ['polarised light of intensity', 'incident intensity', 'intensity of', 'initial intensity'] },
       { key: 'theta', name: 'angle between transmission axes', cues: ['angle', 'rotated', 'axes', 'at an angle of'] },
-      { key: 'I', name: 'transmitted intensity', cues: ['transmitted', 'emerges', 'final intensity', 'passes through'] },
+      { key: 'I', name: 'transmitted intensity', cues: ['transmitted', 'emerges', 'emerging', 'final intensity', 'passes through', 'second polariser', 'second polarizer', 'after the second', 'through both'] },
     ],
     relations: [
       { f: 'unpolarised', map: { I1: 'Imax' }, why: 'The first polariser transmits half of the unpolarised intensity.' },
@@ -267,8 +267,10 @@ export const M7_SCENARIOS: Scenario[] = [
       { f: 'mass_energy', map: { m: 'm0', E: 'E0' } },
       { f: 'const_speed', map: { d: 'd', t: 't' }, why: 'Observer frame: distance = speed × dilated time.' },
       { f: 'const_speed', map: { d: 'd0', t: 't0' }, why: 'Traveller frame: distance = speed × proper time.' },
+      { f: 'const_speed', map: { d: 'l0', t: 't' }, priority: -2, why: 'Journey: the Earth-frame (proper) distance divided by the speed gives the Earth-frame time.' },
+      { f: 'const_speed', map: { d: 'l', t: 't0' }, priority: -2, why: 'Journey: in the traveller’s frame the distance is contracted; contracted distance ÷ speed = proper time.' },
     ],
-    keywords: [['relativ', 4], ['time dilation', 6], ['length contraction', 6], ['lorentz', 5], ['muon', 5], ['spaceship', 3], ['spacecraft', 2], ['astronaut', 2], ['proper time', 5], ['proper length', 5], ['light-years', 2], ['relativistic', 5], ['twin', 2]],
+    keywords: [['relativ', 4], ['time dilation', 6], ['length contraction', 6], ['lorentz', 5], ['muon', 5], ['spaceship', 3], ['spacecraft', 2], ['astronaut', 2], ['proper time', 5], ['proper length', 5], ['light-years', 2], ['relativistic', 5], ['twin', 2], ['contracted', 4], ['rest length', 5], ['rest mass', 3], ['dilated', 4]],
     targets: ['gamma', 't', 't0', 'l', 'l0', 'p', 'v', 'd', 'pcl', 'E0'],
     defaultTarget: 't',
     checks: (v) => (v.v !== undefined && v.v >= c ? [{ level: 'error', msg: 'v ≥ c is impossible for an object with mass.' }] : []),

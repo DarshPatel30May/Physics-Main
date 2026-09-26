@@ -191,6 +191,13 @@ export const M6_FORMULAS: Formula[] = [
     source: 'DERIVED', onSheet: false, keywords: ['area'],
   },
   {
+    id: 'area_square', name: 'Area of a square coil', module: 6, topic: 'induction', syllabus: IND,
+    equation: 'A = s^2',
+    vars: { A: V('A', 'area', 'area'), s: V('s', 'side length', 'length') },
+    solve: { A: 's^2', s: 'sqrt(A)' },
+    source: 'DERIVED', onSheet: false, keywords: ['square coil', 'square loop', 'area'],
+  },
+  {
     id: 'area_circle', name: 'Area of a circular coil', module: 6, topic: 'induction', syllabus: IND,
     equation: 'A = \\pi r^2',
     vars: { A: V('A', 'area', 'area'), r: V('r', 'radius of coil', 'length') },

@@ -103,6 +103,7 @@ function symbolMatches(v: ResolvedVar, sym: string): boolean {
 }
 
 function kindCompatible(v: ResolvedVar, q: Extracted): boolean {
+  if (q.value < 0 && !v.signed) return false;
   if (v.q === 'amount') return q.kinds.some((k) => k === 'amount' || k === 'mass' || k === 'activity' || k === 'count' || k === 'percent');
   if (v.q === 'angle') return q.kinds.includes('angle') || (q.unit === '' && !!q.symbol);
   if (v.q === 'count') return q.unit === '' || ['turns', 'lines', 'slits', 'nuclei', 'photons'].includes(q.unit);
@@ -159,7 +160,7 @@ function firstWordIndex(hay: string, w: string): number {
 /* Targets                                                              */
 /* ------------------------------------------------------------------ */
 
-const TARGET_RE = /\b(calculate|determine|find|what (?:is|was|will|would|are|were)|how (?:far|long|fast|high|much|many|large|big|quickly)|estimate|evaluate|predict|deduce|compute|show that|quantify|obtain|work out)\b([^.?\n]*)/gi;
+const TARGET_RE = /\b(calculate|determine|find|what (?:is|was|will|would|are|were)|at what|what|which|how (?:far|long|fast|high|much|many|large|big|quickly|old)|estimate|evaluate|predict|deduce|compute|show that|quantify|obtain|work out)\b([^.?\n]*)/gi;
 
 interface TargetPhrase {
   verb: string;
@@ -206,7 +207,7 @@ const NOUN_KINDS: Array<[RegExp, QuantityKind[]]> = [
   [/decay constant/, ['decayConstant']],
   [/binding energy per nucleon/, ['energyPerNucleon']],
   [/wavelength/, ['length']],
-  [/half-life|half life|lifetime|time interval|\btime\b|period|how long/, ['time']],
+  [/half-life|half life|lifetime|time interval|\btime\b|period|how long|\bage\b|how old/, ['time']],
   [/kinetic energy|energy|work done|\bwork\b|work function/, ['energy', 'energyPerNucleon']],
   [/frequency/, ['frequency']],
   [/acceleration/, ['acceleration']],
@@ -246,7 +247,7 @@ function headKinds(phrase: string): QuantityKind[] | null {
 function scoreTargetVar(v: ResolvedVar, tp: TargetPhrase): number {
   const p = tp.phrase;
   const hk = headKinds(p);
-  const kindOk = !hk || hk.includes(v.q) || (v.q === 'amount');
+  const kindOk = !hk || hk.includes(v.q);
   const factor = kindOk ? 1 : 0.25;
   const rate = /per second|each second|every second|per unit time|\brate\b/.test(p) && ['massPerTime', 'power', 'frequency', 'activity'].includes(v.q) ? 10 : 0;
   return factor * scoreTargetVarRaw(v, tp) + (hk && hk.includes(v.q) ? 0.5 : 0) + rate;
@@ -263,7 +264,7 @@ function scoreTargetVarRaw(v: ResolvedVar, tp: TargetPhrase): number {
   }
   const verb = tp.verb;
   if (verb === 'how far' && v.q === 'length') best = Math.max(best, 8);
-  if (verb === 'how long' && v.q === 'time') best = Math.max(best, 9);
+  if ((verb === 'how long' || verb === 'how old') && v.q === 'time') best = Math.max(best, 9);
   if ((verb === 'how fast' || verb === 'how quickly') && v.q === 'speed') best = Math.max(best, 9);
   if (verb === 'how high' && v.q === 'length') best = Math.max(best, 8);
   if (verb === 'how many' && (v.q === 'count' || v.q === 'dimensionless' || v.q === 'frequency')) best = Math.max(best, 7);
@@ -400,6 +401,25 @@ function mapScenario(s: ResolvedScenario, qs: Extracted[], text: string, particl
     if (/(from zero|initially zero|switched on|placed into|moved into)/.test(lower) && !has('B1') && s.vars.B1) fill('B1', 0, 'Field starts at zero ⇒ B₁ = 0.', 'given', 4);
   }
   if (sid === 'transformer' && /step[- ]down/.test(lower)) notes.push('Step-down transformer: Vs < Vp.');
+  if (/\b(single|one)[- ](loop|turn|coil)\b|\bsingle-turn\b/.test(lower)) {
+    if (s.vars.n && s.vars.n.q === 'count' && !has('n')) fill('n', 1, 'A single loop ⇒ n = 1 turn.', 'given', 4);
+    if (s.vars.N && s.vars.N.q === 'count' && !has('N')) fill('N', 1, 'A single loop ⇒ N = 1 turn.', 'given', 4);
+  }
+  if (sid === 'generator') {
+    const perpFirst = /from (a|the)? ?(position|orientation)?[^.]*?plane[^.]*?perpendicular[^.]*?to (a|the)? ?(position|orientation)?[^.]*?plane[^.]*?parallel/.test(lower);
+    const parFirst = /from (a|the)? ?(position|orientation)?[^.]*?plane[^.]*?parallel[^.]*?to (a|the)? ?(position|orientation)?[^.]*?plane[^.]*?perpendicular/.test(lower);
+    if (perpFirst) { fill('th1', 0, 'Plane perpendicular to B ⇒ normal parallel to B: θ₁ = 0° (maximum flux).', 'given', 4); fill('th2', Math.PI / 2, 'Plane parallel to B ⇒ θ₂ = 90° to the normal (zero flux).', 'given', 4); }
+    if (parFirst) { fill('th1', Math.PI / 2, 'Plane parallel to B ⇒ θ₁ = 90° to the normal (zero flux).', 'given', 4); fill('th2', 0, 'Plane perpendicular to B ⇒ θ₂ = 0° (maximum flux).', 'given', 4); }
+    if (/quarter (of a )?(turn|rotation|revolution)/.test(lower) && !has('th1')) { fill('th1', 0, 'Assumed to start with maximum flux (θ₁ = 0°).', 'assumed', 4); fill('th2', Math.PI / 2, 'A quarter turn ⇒ θ₂ = 90°.', 'given', 4); }
+  }
+  if (sid === 'relativity') {
+    const pc = qs.find((q) => q.unit === '%' && !used.has(q.id) && /length/.test(q.after + ' ' + q.before));
+    if (pc && !has('l') && !has('l0')) {
+      fill('l0', 1, 'Only the ratio matters: take the rest length as 1 (unit length).', 'given', 3);
+      fill('l', pc.value / 100, `The contracted length is ${pc.value}% of the rest length.`, 'given', pc.sigFigs);
+      used.add(pc.id);
+    }
+  }
   if (sid === 'dc_motor') {
     if (/plane[^.]*parallel to the (magnetic )?field|parallel to the plane/.test(lower) && !has('theta') && !has('alpha')) fill('theta', Math.PI / 2, 'Plane of the coil parallel to B ⇒ θ = 90° between B and the normal (maximum torque).', 'given', 4);
     if (/plane[^.]*perpendicular to the (magnetic )?field/.test(lower) && !has('theta') && !has('alpha')) fill('theta', 0, 'Plane of the coil perpendicular to B ⇒ θ = 0° to the normal (zero torque).', 'given', 4);
@@ -464,7 +484,7 @@ function mapScenario(s: ResolvedScenario, qs: Extracted[], text: string, particl
     if (sid === 'chadwick' && particle.name === 'neutron' && !has('m1')) fill('m1', CONST.mn.value, 'Mass of neutron (NESA data sheet).', 'constant', 4);
   }
 
-  const unused = qs.filter((q) => !used.has(q.id) && !claimedIds.has(q.id));
+  const unused = qs.filter((q) => !used.has(q.id) && !claimedIds.has(q.id) && !(autoFilled.length && q.unit === '%' && sid === 'relativity'));
 
   // Build knowns
   const knowns: Record<string, KnownInput> = {};
