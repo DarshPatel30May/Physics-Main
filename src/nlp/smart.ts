@@ -332,6 +332,18 @@ function mapScenario(s: ResolvedScenario, qs: Extracted[], text: string, particl
     taken.add(key);
   };
 
+  // 0. Two ramps / platforms of equal height: that height does not affect the motion.
+  const equalHeightIds = new Set<number>();
+  if ((s.id === 'projectile' || s.id === 'projectile_level') && /\b(both|the)\s+(ramps?|platforms?|banks?|cliffs?)\b[^.]*\b(are|both)\b[^.]*\bhigh\b|same height|equal height|level with/.test(lower)) {
+    for (const q of qs) {
+      if (q.kinds.includes('length') && (/^\s*(high|tall)\b/.test(q.after) || /height of\s*$/.test(q.before))) {
+        equalHeightIds.add(q.id);
+        used.add(q.id);
+        notes.push(`The launch and landing points are at the same height (both ${q.raw}), so that height does not affect the motion: Δy = 0.`);
+      }
+    }
+  }
+
   // 1. explicit symbols (e.g. "B = 0.50 T")
   for (const q of qs) {
     if (!q.symbol || claimedIds.has(q.id)) continue;
@@ -410,6 +422,8 @@ function mapScenario(s: ResolvedScenario, qs: Extracted[], text: string, particl
       if (!landsAbove) notes.push(`Launch point is ${syA.q.value} ${syA.q.unit} ABOVE the landing point, so Δy = −${syA.q.value} ${syA.q.unit} (up positive).`);
       (syA as Assignment & { sign?: number }).sign = landsAbove ? 1 : -1;
     }
+    if (equalHeightIds.size && sid === 'projectile' && !has('sy')) fill('sy', 0, 'Launch and landing at the same height ⇒ Δy = 0.', 'given', 4);
+    if (sid === 'projectile_level' && /\bramps?\b/.test(lower) && assignments.some((a) => a.key === 'theta')) notes.push('The launch angle equals the angle of the ramp; launch and landing are at the same height, so the level-ground range equation applies.');
     if (!has('sy') && /(level ground|same (height|level)|ground level|from the ground|off the ground|on the ground|lands on the ground|returns to the ground|from ground|on flat ground|kicked from|hit from)/.test(lower) && !/cliff|building|tower|table|bench|high\b/.test(lower)) {
       fill('sy', 0, 'Lands at the same height it was launched from ⇒ Δy = 0.', 'given', 4);
     }

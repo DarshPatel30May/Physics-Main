@@ -119,7 +119,8 @@ export function resolveSigFigs(mode: SigFigMode, dataSigFigs: number[]): number 
   const relevant = dataSigFigs.filter((n) => n > 0);
   if (relevant.length === 0) return 3;
   const min = Math.min(...relevant);
-  return Math.max(2, Math.min(4, min));
+  // NESA sample answers normally quote 3 s.f. even when some data are given to 2 s.f.
+  return Math.max(3, Math.min(4, min));
 }
 
 /** Plain-text scientific formatting for inputs/logs with 4 s.f. */

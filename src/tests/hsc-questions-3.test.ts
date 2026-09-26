@@ -32,6 +32,10 @@ const CASES: Case[] = [
   { q: 'The International Space Station orbits at an altitude of 420 km above the Earth. Calculate its orbital speed.', target: 'v', value: Math.sqrt((G * ME) / (RE + 4.2e5)) },
   { q: 'A proton is accelerated from rest through a potential difference of 2.0 kV. Calculate its final speed.', target: 'v', value: Math.sqrt((2 * e * 2000) / mp) },
   { q: 'Calculate the frequency of a photon with an energy of 3.2 × 10^-19 J.', target: 'f', value: 3.2e-19 / h },
+  // NESA 2025 HSC Physics Question 28 (answer 15.6 m/s in the marking guidelines)
+  { q: 'A bicycle rider jumps from one ramp to a second ramp separated by 16 m as shown. The ramps are inclined at 20° and are 2 m high. What minimum speed is required for the rider to land on the second ramp', target: 'u', value: Math.sqrt((16 * g) / Math.sin(40 * Math.PI / 180)) },
+  { q: 'A motorbike leaves a ramp inclined at 30° to the horizontal and must clear a gap of 25 m to land on an identical ramp at the same height. Calculate the minimum take-off speed.', target: 'u', value: Math.sqrt((25 * g) / Math.sin(60 * Math.PI / 180)) },
+  { q: 'A skier leaves a jump at 20 m/s at 25° above the horizontal and lands at the same height. How far does the skier travel horizontally?', target: 'sx', value: (400 * Math.sin(50 * Math.PI / 180)) / g },
   { q: 'Calculate the force between two point charges of 2.0 μC and 5.0 μC separated by 0.30 m.', target: 'F', value: (2e-6 * 5e-6) / (4 * Math.PI * 8.854e-12 * 0.09) },
 ];
 

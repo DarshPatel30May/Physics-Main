@@ -41,7 +41,7 @@ describe('number parsing', () => {
     expect(formatSig(123.456, 3).text).toBe('123');
     expect(formatSig(9600, 4).text).toBe('9600');
   });
-  it('auto sig figs', () => { expect(resolveSigFigs('auto', [3, 4])).toBe(3); expect(resolveSigFigs('auto', [1])).toBe(2); expect(resolveSigFigs('auto', [])).toBe(3); });
+  it('auto sig figs', () => { expect(resolveSigFigs('auto', [3, 4])).toBe(3); expect(resolveSigFigs('auto', [1])).toBe(3); expect(resolveSigFigs('auto', [5])).toBe(4); expect(resolveSigFigs('auto', [])).toBe(3); });
 });
 
 describe('expression engine', () => {

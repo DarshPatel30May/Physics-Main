@@ -34,7 +34,7 @@ describe('user-specified reference calculations', () => {
     const r = solveWithAssumptions(getScenario('decay'), { N0: { value: toSI(120, 'g'), unit: 'g', sigFigs: 3, origin: 'given' }, thalf: { value: toSI(30, 'yr'), sigFigs: 2, origin: 'given' }, t: { value: toSI(90, 'yr'), sigFigs: 2, origin: 'given' } }, { target: 'Nt' });
     expect(r.values.n).toBeCloseTo(3, 12);
     const a = formatAnswer(getScenario('decay'), 'Nt', r, 'auto');
-    expect(a.main.text).toBe('15 g');
+    expect(a.main.text).toBe('15.0 g');
   });
 });
 
@@ -75,7 +75,7 @@ describe('physical validation rejects impossible data', () => {
 describe('significant figures', () => {
   const scn = getScenario('circular');
   const r = solve('circular', { m: 1200, v: 20, r: 50 }, 'Fc', 2);
-  it('auto uses least precise data (2 s.f.)', () => { expect(formatAnswer(scn, 'Fc', r, 'auto').main.text).toBe('9.6 × 10³ N'); });
+  it('auto uses at least 3 s.f. and notes the 2 s.f. value', () => { const a = formatAnswer(scn, 'Fc', r, 'auto'); expect(a.main.text).toBe('9.60 × 10³ N'); expect(a.sigRule).toMatch(/9.6 × 10³ N/); });
   it('2/3/4 s.f. and full precision', () => {
     expect(formatAnswer(scn, 'Fc', r, 2).main.text).toBe('9.6 × 10³ N');
     expect(formatAnswer(scn, 'Fc', r, 3).main.text).toBe('9.60 × 10³ N');

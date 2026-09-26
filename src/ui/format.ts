@@ -117,11 +117,13 @@ export function formatAnswer(scn: ResolvedScenario, key: string, result: FullSol
     const frac = si / result.values.N0;
     equivalents.push({ latex: `${formatSig(frac * 100, sig).latex}\\%\\ \\text{of } N_0`, text: `${formatSig(frac * 100, sig).text}% of N₀` });
   }
-  const sigRule = mode === 'auto'
-    ? result.dataSigFigs.length
-      ? `Least precise data: ${Math.min(...result.dataSigFigs)} s.f. ⇒ answer to ${sig} s.f.${Math.min(...result.dataSigFigs) < 2 ? ' (minimum 2 s.f.)' : ''}${Math.min(...result.dataSigFigs) > 4 ? ' (capped at 4 s.f.)' : ''}`
-      : 'No measured data precision available ⇒ 3 s.f. by default.'
-    : mode === 'full' ? 'Full calculator precision (no rounding).' : `Rounded to ${mode} s.f. (selected).`;
+  const minData = result.dataSigFigs.length ? Math.min(...result.dataSigFigs) : null;
+  let sigRule: string;
+  if (mode === 'auto') {
+    if (minData === null) sigRule = 'No measured data precision available ⇒ 3 s.f.';
+    else if (minData < 3) sigRule = `Least precise data: ${minData} s.f. Answer given to 3 s.f., as in NESA sample answers (to ${minData} s.f.: ${formatQty(v, si, unit, Math.max(1, minData)).text}).`;
+    else sigRule = `Least precise data: ${minData} s.f. ⇒ answer to ${sig} s.f.${minData > 4 ? ' (capped at 4 s.f.)' : ''}`;
+  } else sigRule = mode === 'full' ? 'Full calculator precision (no rounding).' : `Rounded to ${mode} s.f. (selected).`;
   return { main, si: siDisp, equivalents: equivalents.slice(0, 5), sig, sigRule, magnitudeNote };
 }
 
