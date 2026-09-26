@@ -126,3 +126,22 @@ export function fmt(value: number, n: number | 'full' = 4): string {
 export function fmtLatex(value: number, n: number | 'full' = 4): string {
   return formatSig(value, n).latex;
 }
+
+/** Format to n s.f. but drop trailing zeros after the decimal point (for angles and exact values). */
+export function formatTrim(value: number, n: number): Formatted {
+  const f = formatSig(value, n);
+  const trim = (x: string) => (x.includes('.') ? x.replace(/0+$/, '').replace(/\.$/, '') : x);
+  if (f.exponent === 0 && !f.text.includes('×')) {
+    const t = trim(f.text);
+    return { ...f, text: t, latex: t, mantissa: t };
+  }
+  return f;
+}
+
+/** Plain-text unit prettifier: "m/s^2" → "m s⁻²". */
+export function prettyUnit(u: string): string {
+  const sup = (x: string) => x.replace(/-/g, '⁻').replace(/\d/g, (d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[Number(d)]);
+  let s = u.replace(/\^(-?\d+)/g, (_m, e) => sup(e));
+  s = s.replace(/\/([A-Za-zμΩ]+)(⁻?[⁰¹²³⁴⁵⁶⁷⁸⁹]*)/g, (_m, b, e) => ` ${b}${e ? (e.startsWith('⁻') ? e.slice(1) : '⁻' + e) : '⁻¹'}`);
+  return s;
+}

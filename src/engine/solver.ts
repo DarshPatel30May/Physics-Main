@@ -4,7 +4,7 @@ import { dimEq, dimToUnitLatex, Dim, DIMLESS } from './dimensions';
 import { normSolution, Solution } from './types';
 import type { ResolvedScenario, ResolvedRelation, ResolvedVar } from './scenario';
 import { CONST } from '../data/constants';
-import { formatSig } from './numbers';
+import { formatSig, formatTrim } from './numbers';
 import { unitLatex } from './units';
 
 export type Origin = 'given' | 'constant' | 'assumed' | 'derived';
@@ -80,7 +80,7 @@ export function siUnitLatex(v: ResolvedVar): string {
 export function valueLatex(v: ResolvedVar, value: number, sig = 4): string {
   if (v.q === 'angle') {
     const deg = (value * 180) / Math.PI;
-    return `${formatSig(deg, Math.max(3, sig)).latex}^{\\circ}`;
+    return `${formatTrim(deg, Math.max(3, sig)).latex}^{\\circ}`;
   }
   if ((v.q === 'count' || v.integer) && Math.abs(value - Math.round(value)) < 1e-9) return String(Math.round(value));
   return formatSig(value, sig).latex;
