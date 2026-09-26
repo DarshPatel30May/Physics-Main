@@ -101,7 +101,7 @@ export const M7_SCENARIOS: Scenario[] = [
       { key: 'theta', cues: ['angle', 'diffracted at', 'at an angle'] },
       { key: 'L', name: 'slit-to-screen distance', cues: ['screen', 'from the slits', 'distance to the screen', 'away'] },
       { key: 'y', name: 'distance of fringe from central maximum', cues: ['from the central', 'from the centre', 'central maximum', 'from the central bright'] },
-      { key: 'dy', name: 'fringe spacing (small angle)', cues: ['fringe spacing', 'fringe separation', 'between adjacent', 'between fringes', 'spacing between'] },
+      { key: 'dy', name: 'fringe spacing (small angle)', cues: ['fringe spacing', 'fringe separation', 'between adjacent', 'between fringes', 'spacing between', 'bright fringes', 'dark fringes', 'fringes are', 'fringes'] },
       { key: 'pd', name: 'path difference', cues: ['path difference'], advanced: true },
       { key: 'mmax', cues: ['maximum order', 'highest order', 'how many'], advanced: true },
     ],

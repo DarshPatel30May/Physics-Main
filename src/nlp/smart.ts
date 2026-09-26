@@ -116,9 +116,10 @@ function kindCompatible(v: ResolvedVar, q: Extracted): boolean {
   return dimEq(qd, ud) && !isDimless(ud);
 }
 
-function cueScore(v: ResolvedVar, q: Extracted, spans: Array<[number, number]> = []): { score: number; cue: string } {
+function cueScore(v: ResolvedVar, q: Extracted, spans: Array<[number, number]> = []): { score: number; cue: string; span: [number, number] | null } {
   let best = 0;
   let bestCue = '';
+  let bestSpan: [number, number] | null = null;
   const cues = [...v.cues, v.name.toLowerCase()];
   const inSpan = (abs: number) => spans.find(([a, b]) => abs >= a && abs <= b);
   for (const cue of cues) {
@@ -128,19 +129,29 @@ function cueScore(v: ResolvedVar, q: Extracted, spans: Array<[number, number]> =
     const i = c.length <= 3 ? lastWordIndex(q.before, c) : q.before.lastIndexOf(c);
     if (i >= 0) {
       const dist = q.before.length - (i + c.length);
-      let s = w - dist * 0.06;
+      let s = w - dist * 0.06 + (dist <= 3 ? 2.5 : 0);
       // A cue that is part of the question being asked ("calculate the fringe spacing on a screen 2.0 m away")
       // describes the unknown, not this value.
       if (inSpan(q.beforeStart + i) && dist > 3) s *= 0.35;
-      if (s > best) { best = s; bestCue = cue; }
+      if (s > best) { best = s; bestCue = cue; bestSpan = [q.beforeStart + i, q.beforeStart + i + c.length]; }
+    }
+    // Cue earlier in the same sentence (beyond a neighbouring value) — weaker evidence.
+    if (c.length > 5 && q.wideBefore.length > q.before.length) {
+      const wi = q.wideBefore.lastIndexOf(c);
+      const absEnd = q.start - q.wideBefore.length + wi + c.length;
+      if (wi >= 0 && q.prevStart >= 0 && absEnd <= q.prevStart) {
+        const dist = q.wideBefore.length - (wi + c.length);
+        const s = w - dist * 0.06 - 2.5;
+        if (s > best) { best = s; bestCue = cue; bestSpan = [absEnd - c.length, absEnd]; }
+      }
     }
     const j = c.length <= 3 ? firstWordIndex(q.after, c) : q.after.indexOf(c);
     if (j >= 0) {
       const s = w * 0.85 - j * 0.1;
-      if (s > best) { best = s; bestCue = cue; }
+      if (s > best) { best = s; bestCue = cue; bestSpan = [q.end + j, q.end + j + c.length]; }
     }
   }
-  return { score: best, cue: bestCue };
+  return { score: best, cue: bestCue, span: bestSpan };
 }
 
 function lastWordIndex(hay: string, w: string): number {
@@ -183,7 +194,7 @@ export function findTargetPhrases(text: string): TargetPhrase[] {
     for (const piece of pieces) {
       const at = text.indexOf(piece, offset);
       const st = at >= 0 ? at : offset;
-      out.push({ verb, phrase: (verb + ' ' + piece).toLowerCase(), start: pieces.length > 1 ? st : m.index, end: st + piece.length });
+      out.push({ verb, phrase: (verb + ' ' + piece).toLowerCase().replace(/\s+/g, ' ').trim(), start: pieces.length > 1 ? st : m.index, end: st + piece.length });
       offset = st + piece.length;
     }
   }
@@ -207,7 +218,7 @@ const NOUN_KINDS: Array<[RegExp, QuantityKind[]]> = [
   [/decay constant/, ['decayConstant']],
   [/binding energy per nucleon/, ['energyPerNucleon']],
   [/wavelength/, ['length']],
-  [/half-life|half life|lifetime|time interval|\btime\b|period|how long|\bage\b|how old/, ['time']],
+  [/half-life|half life|lifetime|time interval|\btime\b|period|how long(?! (is|was|are|were) (it|the|this)\b)|\bage\b|how old/, ['time']],
   [/kinetic energy|energy|work done|\bwork\b|work function/, ['energy', 'energyPerNucleon']],
   [/frequency/, ['frequency']],
   [/acceleration/, ['acceleration']],
@@ -248,7 +259,8 @@ function scoreTargetVar(v: ResolvedVar, tp: TargetPhrase): number {
   const p = tp.phrase;
   const hk = headKinds(p);
   const kindOk = !hk || hk.includes(v.q);
-  const factor = kindOk ? 1 : 0.25;
+  const lengthQ = tp.verb === 'how long' && /^how long (is|was|are|were|will|would|does|do)\b(?! it take)/.test(p);
+  const factor = (kindOk ? 1 : 0.25) * (lengthQ && v.q === 'time' ? 0.2 : 1);
   const rate = /per second|each second|every second|per unit time|\brate\b/.test(p) && ['massPerTime', 'power', 'frequency', 'activity'].includes(v.q) ? 10 : 0;
   return factor * scoreTargetVarRaw(v, tp) + (hk && hk.includes(v.q) ? 0.5 : 0) + rate;
 }
@@ -264,7 +276,9 @@ function scoreTargetVarRaw(v: ResolvedVar, tp: TargetPhrase): number {
   }
   const verb = tp.verb;
   if (verb === 'how far' && v.q === 'length') best = Math.max(best, 8);
-  if ((verb === 'how long' || verb === 'how old') && v.q === 'time') best = Math.max(best, 9);
+  const lengthQ = verb === 'how long' && /^how long (is|was|are|were|will|would|does|do)\b(?! it take)/.test(p);
+  if (lengthQ && v.q === 'length') best = Math.max(best, 12);
+  if ((verb === 'how long' || verb === 'how old') && v.q === 'time' && !lengthQ) best = Math.max(best, 9);
   if ((verb === 'how fast' || verb === 'how quickly') && v.q === 'speed') best = Math.max(best, 9);
   if (verb === 'how high' && v.q === 'length') best = Math.max(best, 8);
   if (verb === 'how many' && (v.q === 'count' || v.q === 'dimensionless' || v.q === 'frequency')) best = Math.max(best, 7);
@@ -335,14 +349,25 @@ function mapScenario(s: ResolvedScenario, qs: Extracted[], text: string, particl
   const pairs: Array<{ q: Extracted; v: ResolvedVar; score: number; cue: string }> = [];
   for (const q of qs) {
     if (used.has(q.id) || claimedIds.has(q.id)) continue;
+    const local: Array<{ v: ResolvedVar; score: number; cue: string; span: [number, number] | null; hint: number }> = [];
     for (const k of s.varOrder) {
       const v = s.vars[k];
       if (taken.has(k)) continue;
       if (!kindCompatible(v, q)) continue;
-      const { score, cue } = cueScore(v, q, spans);
+      const { score, cue, span } = cueScore(v, q, spans);
       let hint = 0;
       if (v.valueHint) { try { hint = v.valueHint(siFor(v, q)); } catch { hint = 0; } }
-      pairs.push({ q, v, score: score + hint + (score > 0 ? (v.advanced ? 0 : 0.5) : 0) + (v.constant ? -2 : 0), cue: cue || (hint > 0 ? 'size of the value' : '') });
+      local.push({ v, score, cue, span, hint });
+    }
+    // A cue that lies strictly inside a longer cue matched by another variable is less specific
+    // ("radius of" inside "orbital radius of") — penalise it.
+    for (const a of local) {
+      if (!a.span) continue;
+      const covered = local.some((b) => b !== a && b.span && b.span[0] <= a.span![0] && b.span[1] >= a.span![1] && (b.span[1] - b.span[0]) > (a.span![1] - a.span![0]));
+      if (covered) a.score -= 4;
+    }
+    for (const a of local) {
+      pairs.push({ q, v: a.v, score: a.score + a.hint + (a.score > 0 ? (a.v.advanced ? 0 : 0.5) : 0) + (a.v.constant ? -2 : 0), cue: a.cue || (a.hint > 0 ? 'size of the value' : '') });
     }
   }
   pairs.sort((a, b) => b.score - a.score);
@@ -455,6 +480,8 @@ function mapScenario(s: ResolvedScenario, qs: Extracted[], text: string, particl
     if (/(one[- ]eighth|an eighth|1\/8)/.test(lower) && !has('Nt')) { fill('N0', 1, 'Fractions of the original sample: N₀ = 1.', 'given', 4); fill('Nt', 0.125, 'One eighth remains ⇒ Nₜ = 0.125 N₀.', 'given', 4); }
     if (/(one[- ]half|half of the|1\/2 of)/.test(lower) && !has('Nt') && !/half-life/.test(lower.replace(/half[- ]life|half[- ]lives/g, ''))) { /* ignore */ }
   }
+
+  if (sid === 'orbit_change' && /from (the )?(earth'?s |planet'?s |its )?surface/.test(lower) && !has('h1')) fill('h1', 0, 'Starting at the surface ⇒ h₁ = 0.', 'given', 4);
 
   // 5. central body
   if (['gravitation', 'orbit', 'orbit_change'].includes(sid)) {

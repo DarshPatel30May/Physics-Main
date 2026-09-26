@@ -13,6 +13,8 @@ export interface Extracted {
   start: number;
   end: number;
   before: string; // context before (lower case)
+  wideBefore: string; // whole sentence before the value (lower case)
+  prevStart: number; // absolute start of the previous value (-1 if none)
   beforeStart: number; // absolute index where `before` starts
   after: string; // context after (lower case)
   /** Explicit symbol written before '=' (e.g. "B = 0.50 T"). */
@@ -146,6 +148,8 @@ export function extractQuantities(text: string): Extracted[] {
       start,
       end,
       before: '',
+      wideBefore: '',
+      prevStart: -1,
       beforeStart: start,
       after: '',
       symbol,
@@ -176,6 +180,12 @@ export function extractQuantities(text: string): Extracted[] {
       if (cm && cm.index > 0) after = after.slice(0, cm.index);
     }
     q.before = before.toLowerCase();
+    q.prevStart = i > 0 ? out[i - 1].start : -1;
+    {
+      const sent = text.slice(Math.max(0, q.start - 200), q.start);
+      const sb2 = Math.max(sent.lastIndexOf('. '), sent.lastIndexOf('? '), sent.lastIndexOf('\n'));
+      q.wideBefore = (sb2 >= 0 ? sent.slice(sb2 + 1) : sent).toLowerCase();
+    }
     q.beforeStart = q.start - before.length;
     q.after = after.toLowerCase();
   }

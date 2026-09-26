@@ -288,7 +288,7 @@ export const M8_SCENARIOS: Scenario[] = [
     title: 'Radioactive decay and half-life',
     blurb: 'Nₜ = N₀e^(−λt), λ = ln2/t½, number of half-lives, activity A = λN. Works for nuclei, mass or activity.',
     vars: [
-      { key: 'N0', name: 'initial amount', cues: ['initial', 'initially', 'originally', 'starts with', 'sample of', 'sample has', 'has a mass of', 'mass of', 'contains', 'begins with', 'initial activity', 'activity of', 'sample contains', 'from', 'falls from', 'drops from'] },
+      { key: 'N0', name: 'initial amount', cues: ['initial', 'initially', 'originally', 'starts with', 'sample of', 'sample has', 'has a mass of', 'mass of', 'contains', 'begins with', 'initial activity', 'sample contains', 'from', 'falls from', 'drops from'] },
       { key: 'Nt', name: 'amount remaining', cues: ['remain', 'remaining', 'left', 'after', 'decreased to', 'falls to', 'drops to', 'to', 'of its original', 'of the original', 'of its initial', 'of the initial'] },
       { key: 'thalf', cues: ['half-life', 'half life', 'halflife'] },
       { key: 't', name: 'elapsed time', cues: ['after', 'time', 'elapsed', 'how long', 'years later', 'days later', 'in', 'over', 'period of', 'within', 'age', 'how old'] },
