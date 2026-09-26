@@ -4,6 +4,8 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  // Relative asset paths so the site works at /Physics-Main/ on GitHub Pages and locally.
+  base: './',
   server: { port: 5173, open: true },
   build: {
     chunkSizeWarningLimit: 900,
