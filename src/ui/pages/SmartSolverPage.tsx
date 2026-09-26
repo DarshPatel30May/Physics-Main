@@ -6,6 +6,7 @@ import { formatAnswer, formatQty, siUnitOf } from '../format';
 import { MODULE_NAMES, TOPIC_BY_ID } from '../nav';
 import { formatSig } from '../../engine/numbers';
 import { toSI } from '../../engine/units';
+import { AiImageReader } from '../components/AiImageReader';
 
 const EXAMPLES: Array<[string, string]> = [
   ['Proton in B field', 'A proton enters a uniform magnetic field of 3.00 T perpendicular to the field with a velocity of 1200 m/s. Calculate the acceleration of the proton.'],
@@ -125,6 +126,7 @@ export function SmartSolverPage() {
           <span className="tiny faint hide-sm">Ctrl + Enter to solve</span>
         </div>
         {ocr && <div className={`msg ${ocr.busy ? 'info' : 'warn'}`}>{ocr.msg}</div>}
+        <AiImageReader onUse={(t) => { setText(t); setForced(''); }} />
         <div className="examples">
           {EXAMPLES.map(([label, q]) => <button key={label} className="chip" onClick={() => { setText(q); setForced(''); run(q, ''); }}>{label}</button>)}
         </div>
