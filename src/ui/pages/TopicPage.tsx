@@ -4,7 +4,7 @@ import { ScenarioCalculator } from '../components/ScenarioCalculator';
 import { Tool } from '../tools/registry';
 import { getScenario } from '../../data/scenarios/index';
 import { FORMULAS } from '../../data/formulas/index';
-import { Tex } from '../components/Tex';
+import { Tex, Rich } from '../components/Tex';
 import { SourceBadge } from '../components/SourceBadge';
 
 export function TopicPage({ topicId, go }: { topicId: string; go: (r: string) => void }) {
@@ -20,7 +20,7 @@ export function TopicPage({ topicId, go }: { topicId: string; go: (r: string) =>
         <div className="kicker">Module {t.module} — {MODULE_NAMES[t.module]}</div>
         <h1>{t.label}</h1>
         <p className="small"><em>Inquiry question:</em> {t.inquiry}</p>
-        <p>{t.summary}</p>
+        <p><Rich text={t.summary} /></p>
       </div>
       {scns.length > 0 && (
         <>

@@ -271,7 +271,7 @@ export function solveScenario(scn: ResolvedScenario, knownsIn: Record<string, Kn
   // Physical validation of inputs
   for (const [k, v] of Object.entries(values)) {
     const sv = scn.vars[k];
-    if (!sv.signed && v < 0 && sv.q !== 'angle') errors.push(`${sv.name} (${sv.symbol}) cannot be negative for this calculation — enter its magnitude${sv.q === 'charge' ? ' (the sign of a charge only affects direction)' : ''}.`);
+    if (!sv.signed && v < 0 && sv.q !== 'angle') errors.push(`${sv.name} ($${sv.symbol}$) cannot be negative for this calculation — enter its magnitude${sv.q === 'charge' ? ' (the sign of a charge only affects direction)' : ''}.`);
     if ((sv.q === 'mass' || sv.q === 'temperature' || sv.q === 'frequency' || sv.q === 'length' || sv.q === 'time') && !sv.signed && !sv.nonNegative && v === 0) {
       errors.push(`${sv.name} must be greater than zero.`);
     }
@@ -417,7 +417,7 @@ export function solveScenario(scn: ResolvedScenario, knownsIn: Record<string, Kn
         return Math.abs(a - r) / denom <= tol || (Math.abs(a) < 1e-12 && Math.abs(r) < 1e-12);
       });
       if (!match) {
-        warnings.push(`The data are over-specified and not fully consistent with ${rel.formula.name} (${scn.vars[sk].symbol} from this relation would be ${formatSig(rs[0], 3).text} rather than ${formatSig(actual, 3).text}). Check the question values.`);
+        warnings.push(`The data are over-specified and not fully consistent with ${rel.formula.name} ($${scn.vars[sk].symbol}$ from this relation would be ${formatSig(rs[0], 3).text} rather than ${formatSig(actual, 3).text}). Check the question values.`);
       }
     }
   }

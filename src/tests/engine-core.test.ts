@@ -37,7 +37,9 @@ describe('number parsing', () => {
     expect(formatSig(0.05, 2).text).toBe('0.050');
     expect(formatSig(9999.6, 3).text).toBe('1.00 × 10⁴');
     expect(formatSig(1.6667, 3).text).toBe('1.67');
-    expect(formatSig(123.456, 2).text).toBe('120');
+    expect(formatSig(123.456, 2).text).toBe('1.2 × 10²');
+    expect(formatSig(123.456, 3).text).toBe('123');
+    expect(formatSig(9600, 4).text).toBe('9600');
   });
   it('auto sig figs', () => { expect(resolveSigFigs('auto', [3, 4])).toBe(3); expect(resolveSigFigs('auto', [1])).toBe(2); expect(resolveSigFigs('auto', [])).toBe(3); });
 });

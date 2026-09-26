@@ -86,7 +86,10 @@ export function formatSig(value: number, n: number | 'full'): Formatted {
   if (!Number.isFinite(value)) return { text: String(value), latex: '\\text{undefined}', mantissa: String(value), exponent: 0 };
   const nn = n === 'full' ? 10 : Math.max(1, Math.min(15, n));
   const abs = Math.abs(value);
-  const useSci = abs !== 0 && (abs >= 1e4 || abs < 1e-2);
+  // Scientific notation for large/small numbers, and whenever positional form would show
+  // non-significant trailing zeros (e.g. 9600 to 2 s.f. → 9.6 × 10³).
+  const exp10 = abs === 0 ? 0 : Math.floor(Math.log10(Number(abs.toPrecision(nn))));
+  const useSci = abs !== 0 && (abs >= 1e4 || abs < 1e-2 || (n !== 'full' && exp10 >= nn));
   if (!useSci) {
     let text = fixedFromSig(value, nn);
     if (n === 'full') text = trimZeros(text);

@@ -15,7 +15,7 @@ function StepView({ step, n, full }: { step: Step & { valueLatex: string }; n: n
       <div className="step-t">
         <span>Step {n}:</span> <span>{f.name}</span> <SourceBadge source={f.source} />
       </div>
-      {step.relation.why && full && <div className="why">{step.relation.why}</div>}
+      {step.relation.why && full && <div className="why"><Rich text={step.relation.why} /></div>}
       <div className="eqs">
         <Tex block math={f.equation} />
         {full && f.derivation && f.source !== 'NESA_FORMULA_SHEET' && (
@@ -124,12 +124,12 @@ export function SolutionView({ p }: { p: SolutionPayload }) {
       {full && (scn.convention || (scn.assumptions && scn.assumptions.length > 0)) && result.ok && (
         <div className="sec">
           <div className="sec-t">Model & sign convention</div>
-          {scn.convention && <div className="small">{scn.convention}</div>}
-          {scn.assumptions?.map((a, i) => <div key={i} className="small muted">• {a}</div>)}
+          {scn.convention && <div className="small"><Rich text={scn.convention} /></div>}
+          {scn.assumptions?.map((a, i) => <div key={i} className="small muted">• <Rich text={a} /></div>)}
         </div>
       )}
 
-      {result.errors.map((e, i) => <div key={i} className="msg err">{e}</div>)}
+      {result.errors.map((e, i) => <div key={i} className="msg err"><Rich text={e} /></div>)}
       {result.missing.length > 0 && tv && (
         <div className="msg info">
           To find <Tex math={tv.symbol} /> you also need {result.missing.length > 1 ? 'ONE of these' : ''}:
@@ -152,7 +152,7 @@ export function SolutionView({ p }: { p: SolutionPayload }) {
         <div className="msg info">The requested quantity was supplied directly (no calculation needed).</div>
       )}
 
-      {result.warnings.map((w, i) => <div key={i} className="msg warn">{w}</div>)}
+      {result.warnings.map((w, i) => <div key={i} className="msg warn"><Rich text={w} /></div>)}
 
       {answer && tv && (
         <div className="answer">

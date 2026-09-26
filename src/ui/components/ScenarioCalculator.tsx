@@ -7,7 +7,7 @@ import { toSI, parseUnit } from '../../engine/units';
 import { dimEq } from '../../engine/dimensions';
 import { solveWithAssumptions, KnownInput } from '../../engine/solver';
 import { CONST } from '../../data/constants';
-import { Tex } from './Tex';
+import { Tex, Rich } from './Tex';
 import { useApp } from '../state';
 import { formatQty, siUnitOf } from '../format';
 
@@ -218,7 +218,7 @@ export function ScenarioCalculator({ scenarioId, compact = false }: { scenarioId
       <div className="card-h">
         <div>
           <h3>{scn.title}</h3>
-          {!compact && <p className="small muted">{scn.blurb}</p>}
+          {!compact && <p className="small muted"><Rich text={scn.blurb} /></p>}
         </div>
         <span className="badge mod">M{scn.module}</span>
       </div>

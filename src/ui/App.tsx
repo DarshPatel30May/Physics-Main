@@ -27,7 +27,7 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
   return (
     <header className="topbar">
       <button className="btn small ghost menu-btn" onClick={onMenu} aria-label="Open navigation">☰</button>
-      <div className="brand"><Logo /> <span>HSC Physics Solver</span> <small>Modules 5–8</small></div>
+      <div className="brand"><Logo /> <span className="brand-name">HSC Physics Solver</span> <small>Modules 5–8</small></div>
       <div className="spacer" />
       <div className="controls">
         <label className="small muted hide-sm" htmlFor="sigsel">Sig. figs</label>
@@ -38,7 +38,7 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
           <button className={mode === 'quick' ? 'on' : ''} onClick={() => setMode('quick')}>Quick</button>
           <button className={mode === 'full' ? 'on' : ''} onClick={() => setMode('full')}>Full HSC</button>
         </div>
-        <button className="btn small" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle light/dark theme">{theme === 'dark' ? '☀ Light' : '☾ Dark'}</button>
+        <button className="btn small" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle light/dark theme">{theme === 'dark' ? '☀' : '☾'}<span className="hide-sm">{theme === 'dark' ? ' Light' : ' Dark'}</span></button>
       </div>
     </header>
   );
