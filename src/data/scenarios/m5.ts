@@ -15,7 +15,7 @@ export const M5_SCENARIOS: Scenario[] = [
     vars: [
       { key: 'u', primary: true, cues: ['at', 'launched at', 'launched with', 'initial velocity', 'initial speed', 'thrown at', 'thrown with', 'kicked at', 'kicked with', 'fired at', 'fired with', 'projected at', 'projected with', 'hit at', 'struck at', 'launch speed', 'speed of', 'velocity of', 'leaves', 'at a speed', 'with a speed', 'with a velocity', 'horizontally at', 'rolls off'] },
       { key: 'theta', cues: ['above the horizontal', 'to the horizontal', 'launch angle', 'angle of', 'elevation', 'at an angle', 'below the horizontal'], signed: true },
-      { key: 'sy', symbol: '\\Delta y', name: 'vertical displacement (landing relative to launch)', cues: ['high', 'height', 'cliff', 'building', 'tower', 'above the ground', 'table', 'bench', 'below', 'vertical displacement', 'drops', 'falls'], signed: true },
+      { key: 'sy', symbol: '\\Delta y', name: 'vertical displacement (landing relative to launch)', cues: ['high', 'height', 'cliff', 'building', 'tower', 'above the ground', 'table', 'bench', 'below', 'vertical displacement', 'drops', 'falls', 'bridge', 'balcony', 'window', 'roof', 'above a river', 'above the river', 'above the water', 'above the sea', 'above the floor', 'above'], signed: true },
       { key: 'sx', symbol: '\\Delta x', name: 'horizontal displacement', cues: ['range', 'horizontal distance', 'how far', 'from the base', 'horizontally', 'away', 'horizontal displacement', 'distance'] },
       { key: 't', name: 'time', cues: ['time of flight', 'time', 'seconds', 'after', 'in the air', 'how long', 'flight'] },
       { key: 'ux', cues: ['horizontal component of the initial', 'initial horizontal velocity', 'horizontal velocity'], advanced: true },

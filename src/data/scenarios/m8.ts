@@ -258,7 +258,7 @@ export const M8_SCENARIOS: Scenario[] = [
     vars: [
       { key: 'mr', cues: ['reactants', 'total mass before', 'initial mass'] },
       { key: 'mprod', cues: ['products', 'total mass after', 'final mass'] },
-      { key: 'dm', symbol: '\\Delta m', name: 'mass defect of reaction', q: 'mass', cues: ['mass defect', 'mass difference', 'mass lost', 'decrease in mass'] },
+      { key: 'dm', symbol: '\\Delta m', name: 'mass defect of reaction', q: 'mass', cues: ['mass defect', 'mass difference', 'mass lost', 'decrease in mass', 'less than', 'greater than', 'more than', 'lighter than', 'heavier than', 'difference in mass'] },
       { key: 'E', name: 'energy released per reaction', cues: ['energy released', 'energy', 'q value'], signed: true },
       { key: 'Nr', symbol: 'N', name: 'number of reactions', cues: ['reactions', 'fissions', 'nuclei'], advanced: true },
       { key: 'Etot', cues: ['total energy'], advanced: true },

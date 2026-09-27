@@ -204,7 +204,9 @@ export function findTargetPhrases(text: string): TargetPhrase[] {
 function unitHintFrom(phrase: string, v: ResolvedVar): string | undefined {
   const m = /\bin (?:units of )?([a-zA-Zμ°%/^0-9\- ]{1,12}?)(?:\s*$|[,;)]| to | and |\s+correct)/.exec(phrase);
   if (!m) return undefined;
-  const cand = m[1].trim();
+  let cand = m[1].trim();
+  const CI: Record<string, string> = { ev: 'eV', kev: 'keV', mev: 'MeV', gev: 'GeV', j: 'J', kj: 'kJ', nm: 'nm', um: 'μm', μm: 'μm', mm: 'mm', cm: 'cm', m: 'm', km: 'km', pm: 'pm', hz: 'Hz', khz: 'kHz', mhz: 'MHz', ghz: 'GHz', thz: 'THz', s: 's', ms: 'ms', 'μs': 'μs', us: 'μs', ns: 'ns', min: 'min', h: 'h', hours: 'h', days: 'day', years: 'yr', yr: 'yr', v: 'V', kv: 'kV', mv: 'mV', a: 'A', ma: 'mA', t: 'T', mt: 'mT', 'μt': 'μT', n: 'N', kn: 'kN', w: 'W', kw: 'kW', 'km/h': 'km/h', 'km/s': 'km/s', 'm/s': 'm/s', 'm s-1': 'm/s', k: 'K', 'degrees': '°', 'degree': '°', '°': '°', rad: 'rad', 'mev/c^2': 'MeV/c^2', 'kg': 'kg', g: 'g', u: 'u', bq: 'Bq', wb: 'Wb', c: 'C', 'μc': 'μC', 'uc': 'μC', nc: 'nC', 'n m': 'N m', ω: 'Ω', ohms: 'Ω' };
+  if (CI[cand.toLowerCase()]) cand = CI[cand.toLowerCase()];
   const u = parseUnit(cand);
   if (!u) return undefined;
   if (dimEq(u.dim, QUANTITIES[v.q].dim) && !isDimless(u.dim)) return cand;
@@ -218,7 +220,7 @@ const NOUN_KINDS: Array<[RegExp, QuantityKind[]]> = [
   [/decay constant/, ['decayConstant']],
   [/binding energy per nucleon/, ['energyPerNucleon']],
   [/wavelength/, ['length']],
-  [/half-life|half life|lifetime|time interval|\btime\b|period|how long(?! (is|was|are|were) (it|the|this)\b)|\bage\b|how old/, ['time']],
+  [/half-life|half life|lifetime|time interval|\btime\b|period|\bage\b|how old/, ['time']],
   [/kinetic energy|energy|work done|\bwork\b|work function/, ['energy', 'energyPerNucleon']],
   [/frequency/, ['frequency']],
   [/acceleration/, ['acceleration']],
@@ -246,7 +248,14 @@ const NOUN_KINDS: Array<[RegExp, QuantityKind[]]> = [
   [/intensity/, ['intensity']],
 ];
 
+/** "How long is the rod / spacecraft?" asks for a length; "how long is the ball in the air?" asks for a time. */
+function isLengthQ(p: string): boolean {
+  return /^how long (is|was|are|were|will|would|does|do)\b/.test(p)
+    && !/\b(it take|take|takes|took|last|lasts|in the air|in flight|airborne|to reach|to fall|to hit|to land|to travel|to decay|to stop|interval|time|remain|stay|before)\b/.test(p);
+}
+
 function headKinds(phrase: string): QuantityKind[] | null {
+  if (/^how long\b/.test(phrase)) return isLengthQ(phrase) ? ['length'] : ['time'];
   let best: { idx: number; kinds: QuantityKind[] } | null = null;
   for (const [re, kinds] of NOUN_KINDS) {
     const m = re.exec(phrase);
@@ -259,15 +268,41 @@ function scoreTargetVar(v: ResolvedVar, tp: TargetPhrase): number {
   const p = tp.phrase;
   const hk = headKinds(p);
   const kindOk = !hk || hk.includes(v.q);
-  const lengthQ = tp.verb === 'how long' && /^how long (is|was|are|were|will|would|does|do)\b(?! it take)/.test(p);
+  const lengthQ = tp.verb === 'how long' && isLengthQ(p);
   const factor = (kindOk ? 1 : 0.25) * (lengthQ && v.q === 'time' ? 0.2 : 1);
+  // A variable of the kind being asked for ("energy", "wavelength") beats any other kind.
+  const kindBonus = hk && hk.includes(v.q) ? 6 : 0;
   const rate = /per second|each second|every second|per unit time|\brate\b/.test(p) && ['massPerTime', 'power', 'frequency', 'activity'].includes(v.q) ? 10 : 0;
-  return factor * scoreTargetVarRaw(v, tp) + (hk && hk.includes(v.q) ? 0.5 : 0) + rate;
+  const raw = scoreTargetVarRaw(v, tp);
+  return raw > 0 || kindBonus ? factor * raw + kindBonus + rate : 0;
+}
+
+const STOP = new Set(['the', 'a', 'an', 'of', 'in', 'on', 'to', 'for', 'at', 'by', 'and', 'or', 'is', 'are', 'was', 'be', 'from', 'with', 'its', 'their', 'this', 'that', 'what', 'which', 'calculate', 'determine', 'find', 'one', 'each', 'value', 'magnitude', 'required', 'needed', 'answer', 'give', 'your', 'use', 'using', 'show', 'how', 'will', 'would', 'when', 'as', 'measured', 'observer']);
+function stem(w: string): string {
+  return w.replace(/(ies)$/, 'y').replace(/(?<=..)(?:led|ling)$/, 'l').replace(/(?<=...)(?:ed|ing)$/, '').replace(/([^s])s$/, '$1');
+}
+function contentWords(t: string): string[] {
+  return t.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').split(/[\s-]+/).filter((w) => w.length > 1 && !STOP.has(w)).map(stem);
+}
+
+/** Word-overlap similarity between a question phrase and a variable's name/cues (order-independent). */
+function overlapScore(v: ResolvedVar, phrase: string): number {
+  const pw = new Set(contentWords(phrase));
+  let best = 0;
+  for (const label of [v.name, ...v.cues]) {
+    const lw = [...new Set(contentWords(label))];
+    if (!lw.length) continue;
+    const hit = lw.filter((w) => pw.has(w)).length;
+    if (!hit) continue;
+    const frac = hit / lw.length;
+    best = Math.max(best, frac * 10 + hit * 2);
+  }
+  return best;
 }
 
 function scoreTargetVarRaw(v: ResolvedVar, tp: TargetPhrase): number {
   const p = tp.phrase;
-  let best = 0;
+  let best = overlapScore(v, p);
   for (const cue of [...v.cues, v.name.toLowerCase()]) {
     const c = cue.toLowerCase();
     if (c.length < 3 && !/^[a-z]$/.test(c)) continue;
@@ -276,7 +311,7 @@ function scoreTargetVarRaw(v: ResolvedVar, tp: TargetPhrase): number {
   }
   const verb = tp.verb;
   if (verb === 'how far' && v.q === 'length') best = Math.max(best, 8);
-  const lengthQ = verb === 'how long' && /^how long (is|was|are|were|will|would|does|do)\b(?! it take)/.test(p);
+  const lengthQ = verb === 'how long' && isLengthQ(p);
   if (lengthQ && v.q === 'length') best = Math.max(best, 12);
   if ((verb === 'how long' || verb === 'how old') && v.q === 'time' && !lengthQ) best = Math.max(best, 9);
   if ((verb === 'how fast' || verb === 'how quickly') && v.q === 'speed') best = Math.max(best, 9);
@@ -305,6 +340,8 @@ interface MapOutcome {
   notes: string[];
   knowns: Record<string, KnownInput>;
   claimedIds: Set<number>;
+  /** Reason this calculation type cannot be the right one for the question (never chosen automatically). */
+  veto: string | null;
 }
 
 function siFor(v: ResolvedVar, q: Extracted): number {
@@ -324,7 +361,23 @@ function mapScenario(s: ResolvedScenario, qs: Extracted[], text: string, particl
   const taken = new Set<string>();
   // Quantities inside "show that …" phrases are claims to verify, not data.
   const claimedIds = new Set<number>();
-  for (const tp of targets) if (tp.verb === 'show that') for (const q of qs) if (q.start >= tp.start && q.start <= tp.end) claimedIds.add(q.id);
+  // Only the value being claimed ("… is about 7.7 km/s") is a claim; data inside the phrase
+  // ("at an altitude of 300 km") is still data.
+  for (const tp of targets) {
+    if (tp.verb !== 'show that') continue;
+    const inside = qs.filter((q) => q.start >= tp.start && q.start <= tp.end);
+    if (!inside.length) continue;
+    const claim = inside.filter((q) => /(\bis|\bare|\bwas|\bbe|equals?|=|about|approximately|roughly|around|close to|equal to|than)\s*$/.test(q.before.trimEnd()));
+    claimedIds.add((claim.length ? claim[claim.length - 1] : inside[inside.length - 1]).id);
+  }
+  // A value repeated inside the question ("how long does this 60 s interval last …") refers back
+  // to data already given; it is not new data.
+  for (const tp of targets) {
+    for (const q of qs) {
+      if (q.start < tp.start || q.start > tp.end || q.symbol) continue;
+      if (qs.some((o) => o.start < tp.start && o.value === q.value && o.unit === q.unit)) claimedIds.add(q.id);
+    }
+  }
 
   const assign = (q: Extracted, key: string, score: number, reason: string) => {
     assignments.push({ q, key, score, reason });
@@ -414,7 +467,17 @@ function mapScenario(s: ResolvedScenario, qs: Extracted[], text: string, particl
   // 4. scenario-specific language
   const sid = s.id;
   if (sid === 'projectile' || sid === 'projectile_level') {
+    if (/vertically\s+(up|upward|upwards)|straight\s+up\b|directly\s+upwards?/.test(lower) && !has('theta')) fill('theta', Math.PI / 2, 'Launched vertically upwards ⇒ θ = 90° (u_x = 0).', 'given', 4);
+    if (/\b(dropped|released from rest|falls from rest|let go|starts from rest)\b/.test(lower)) {
+      if (!has('u')) fill('u', 0, 'Dropped / released from rest ⇒ u = 0.', 'given', 4);
+      if (!has('theta')) fill('theta', 0, 'Released from rest (no launch direction) ⇒ θ = 0°.', 'given', 4);
+    }
     if (/\bhorizontally\b|rolls off|rolled off|slides off|runs off|driven off|drives off|flies horizontally/.test(lower) && !has('theta')) fill('theta', 0, 'Launched horizontally ⇒ θ = 0° (u_y = 0).', 'given', 4);
+    const thA = assignments.find((a) => a.key === 'theta');
+    if (thA && thA.q.value > 0 && /^\W*(below the horizontal|below horizontal|downwards?|down from the horizontal)/.test(thA.q.after.replace(/^\s*(°|degrees?)/, ''))) {
+      (thA as Assignment & { sign?: number }).sign = -1;
+      notes.push(`Launched ${thA.q.value}° BELOW the horizontal ⇒ θ = −${thA.q.value}° (u_y is downwards).`);
+    }
     const syA = assignments.find((a) => a.key === 'sy');
     if (syA && !syA.q.symbol && syA.q.value > 0) {
       const ctx = syA.q.before + ' ' + syA.q.after;
@@ -438,6 +501,10 @@ function mapScenario(s: ResolvedScenario, qs: Extracted[], text: string, particl
     if (/(reduced|drops|falls|decreases|switched off|removed)[^.]*\bto zero\b|\bto zero\b/.test(lower) && !has('B2') && s.vars.B2 && has('B1')) fill('B2', 0, 'Field falls to zero ⇒ B₂ = 0.', 'given', 4);
     if (/(removed|pulled out|moved out) (of|from) the field|switched off/.test(lower) && !has('B2') && s.vars.B2) fill('B2', 0, 'Coil removed from the field / field switched off ⇒ B₂ = 0.', 'given', 4);
     if (/(from zero|initially zero|switched on|placed into|moved into)/.test(lower) && !has('B1') && s.vars.B1) fill('B1', 0, 'Field starts at zero ⇒ B₁ = 0.', 'given', 4);
+  }
+  if (sid === 'parallel_wires' && /\beach (carry|carries|carrying|has|have|with)|\bboth (wires|conductors) carry|\b(equal|the same|identical) currents?\b/.test(lower)) {
+    const i1 = assignments.find((a) => a.key === 'I1');
+    if (i1 && !has('I2')) fill('I2', siFor(s.vars.I1, i1.q), `Each wire carries the same current ⇒ I₂ = I₁ = ${i1.q.raw}.`, 'given', i1.q.sigFigs);
   }
   if (sid === 'transformer' && /step[- ]down/.test(lower)) notes.push('Step-down transformer: Vs < Vp.');
   if (/\b(single|one)[- ](loop|turn|coil)\b|\bsingle-turn\b/.test(lower)) {
@@ -525,6 +592,12 @@ function mapScenario(s: ResolvedScenario, qs: Extracted[], text: string, particl
     if (sid === 'chadwick' && particle.name === 'neutron' && !has('m1')) fill('m1', CONST.mn.value, 'Mass of neutron (NESA data sheet).', 'constant', 4);
   }
 
+  let veto: string | null = null;
+  const darkWords = /\bdark\b|\bminim(um|a)\b|destructive/.test(lower);
+  if (sid === 'interference' && darkWords) veto = 'The question is about dark fringes (minima), not bright fringes.';
+  if (sid === 'interference_dark' && !darkWords) veto = 'The question does not mention dark fringes.';
+  if (sid === 'vertical_circle' && !/vertical|loop|top|bottom|highest point|lowest point/.test(lower)) veto = 'Not a vertical-circle situation.';
+
   const unused = qs.filter((q) => !used.has(q.id) && !claimedIds.has(q.id) && !(autoFilled.length && q.unit === '%' && sid === 'relativity'));
 
   // Build knowns
@@ -539,7 +612,7 @@ function mapScenario(s: ResolvedScenario, qs: Extracted[], text: string, particl
   }
   for (const f of autoFilled) knowns[f.key] = { value: f.value, sigFigs: f.sigFigs, origin: f.origin, note: f.note };
   // Question-supplied constants (e.g. "g = 10 m/s²") are already in knowns via symbols → they override data-sheet values.
-  return { assignments, autoFilled, unused, notes, knowns, claimedIds };
+  return { assignments, autoFilled, unused, notes, knowns, claimedIds, veto };
 }
 
 function pickTarget(s: ResolvedScenario, tp: TargetPhrase, knowns: Record<string, KnownInput>): string | null {
@@ -555,6 +628,12 @@ function pickTargetFrom(s: ResolvedScenario, tp: TargetPhrase, isKnown: (k: stri
     if (sc > 0 && (!best || sc > best.sc)) best = { k, sc };
   }
   return best?.k ?? null;
+}
+
+/** True when the question names a kind of quantity (energy, time, …) and the chosen variable is a different kind. */
+function kindMismatch(s: ResolvedScenario, target: string, tp: TargetPhrase): boolean {
+  const hk = headKinds(tp.phrase);
+  return !!hk && !hk.includes(s.vars[target].q);
 }
 
 /* ------------------------------------------------------------------ */
@@ -629,7 +708,8 @@ export function smartSolve(input: string, opts: { scenarioId?: string } = {}): S
     const seenTargets = new Set<string>();
     for (const tp of tps) {
       let target = tp.phrase ? pickTarget(s, tp, map.knowns) : null;
-      if (target) targetHits++;
+      if (target && kindMismatch(s, target, tp)) targetHits -= 2;
+      else if (target) targetHits++;
       if (!target && !targets.length && s.defaultTarget && !map.knowns[s.defaultTarget]) target = s.defaultTarget;
       if (target && seenTargets.has(target)) continue;
       if (target) seenTargets.add(target);
@@ -640,11 +720,11 @@ export function smartSolve(input: string, opts: { scenarioId?: string } = {}): S
         if (cq) claimed = { value: cq.value, unit: cq.unit };
       }
       const result = target ? solveWithAssumptions(s, map.knowns, { target }) : null;
-      if (result?.ok) solvedCount++;
+      if (result?.ok && !(target && kindMismatch(s, target, tp))) solvedCount++;
       parts.push({ phrase: tp.phrase, target, unitHint: v ? unitHintFrom(tp.phrase, v) : undefined, result, claimed });
     }
     const assignedScore = map.assignments.reduce((a, b) => a + Math.min(b.score, 20), 0);
-    const score = solvedCount * 60 + targetHits * 12 + k * 4 + assignedScore * 0.6 + map.autoFilled.length * 2 - map.unused.length * 14;
+    const score = (map.veto ? -500 : 0) + solvedCount * 60 + targetHits * 12 + k * 4 + assignedScore * 0.6 + map.autoFilled.length * 2 - map.unused.length * 14;
     ranking.push({ id: s.id, title: s.title, score, solved: solvedCount > 0 });
     if (!best || score > best.score) best = { s, score, map, parts, solved: solvedCount > 0 };
   }

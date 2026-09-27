@@ -23,8 +23,43 @@ export interface Extracted {
 }
 
 /** Normalise a pasted question into a canonical plain-text form. */
+const LATEX_SYMBOLS: Record<string, string> = {
+  lambda: 'λ', theta: 'θ', phi: 'φ', varphi: 'φ', Phi: 'Φ', mu: 'μ', Omega: 'Ω', omega: 'ω', Delta: 'Δ', delta: 'δ', gamma: 'γ',
+  epsilon: 'ε', varepsilon: 'ε', tau: 'τ', alpha: 'α', beta: 'β', pi: 'π', sigma: 'σ', rho: 'ρ', nu: 'ν', eta: 'η',
+  times: '×', cdot: '·', circ: '°', degree: '°', approx: '≈', le: '≤', ge: '≥', leq: '≤', geq: '≥', to: '→', rightarrow: '→',
+};
+
+/** Convert LaTeX / Markdown maths (as pasted from typeset questions) into plain text. */
+export function stripLatex(input: string): string {
+  let s = input;
+  if (!/[\\$]|\^\{|_\{/.test(s)) return s;
+  s = s.replace(/\$\$|\\\[|\\\]|\\\(|\\\)|\$/g, ' ');
+  s = s.replace(/\\[,;:! ]/g, ' ').replace(/~/g, ' ');
+  s = s.replace(/\\%/g, '%');
+  s = s.replace(/\^\s*\{?\s*\\circ(?:\s*\})?/g, '°');
+  // symbols first, so "\mu\text{s}" becomes "μ\text{s}" rather than "\mus"
+  s = s.replace(/\\(left|right|displaystyle|quad|qquad)(?![A-Za-z])/g, ' ');
+  s = s.replace(/\\([A-Za-z]+)/g, (m, name: string) => (LATEX_SYMBOLS[name] !== undefined ? LATEX_SYMBOLS[name] : m));
+  // flatten exponents/subscripts, then unwrap \text{…} etc. (innermost braces first)
+  for (let k = 0; k < 4; k++) {
+    s = s.replace(/\^\s*\{([^{}]*)\}/g, '^$1');
+    s = s.replace(/_\s*\{([^{}]*)\}/g, '_$1');
+    s = s.replace(/\\frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, '($1)/($2)');
+    s = s.replace(/\\sqrt\s*\{([^{}]*)\}/g, 'sqrt($1)');
+    s = s.replace(/\\(?:text|mathrm|textrm|mathit|mathbf|textbf|operatorname|mbox|rm)\s*\{([^{}]*)\}/g, '$1');
+  }
+  s = s.replace(/\\\\/g, '\n');
+  s = s.replace(/\\([A-Za-z]+)/g, '$1');
+  s = s.replace(/[{}]/g, '');
+  s = s.replace(/\*\*/g, '');
+  // "μ m" → "μm" after \mu m
+  s = s.replace(/μ\s+(m|s|C|A|T|F|g|V|J|W|Wb)\b/g, 'μ$1');
+  s = s.replace(/[ \t]{2,}/g, ' ');
+  return s;
+}
+
 export function normaliseQuestion(text: string): string {
-  let s = text
+  let s = stripLatex(text)
     .replace(/\r/g, '')
     .replace(/[‐‑‒–—−]/g, '-')
     .replace(/µ/g, 'μ')
@@ -33,6 +68,8 @@ export function normaliseQuestion(text: string): string {
     .replace(/[‘’]/g, "'")
     .replace(/ /g, ' ');
   s = normaliseSuperscripts(s);
+  // A minus sign separated from its number (e.g. typeset "− 1.51 eV") belongs to the number.
+  s = s.replace(/(^|[\s(=:])-\s+(?=\d)/g, '$1-');
   // scientific notation variants: 3.00 × 10^8, 3.00 x 10^-19, 3.00 X 10 -19, 3.00*10^8
   s = s.replace(/(\d(?:[\d.]*\d)?)\s*[×xX✕*·]\s*10\s*\^\s*\(?\s*([-+]?\s*\d+)(?:\s*\))?/g, (_m, a, b) => `${a}e${String(b).replace(/\s+/g, '')}`);
   s = s.replace(/(\d(?:[\d.]*\d)?)\s*[×xX✕]\s*10\s*(-\s*\d+)/g, (_m, a, b) => `${a}e${String(b).replace(/\s+/g, '')}`);
@@ -40,6 +77,21 @@ export function normaliseQuestion(text: string): string {
   s = s.replace(/\(\s*\d+\s*marks?\s*\)/gi, ' ').replace(/\bquestion\s+\d+\b/gi, ' ');
   s = s.replace(/(\d),(\d{3})(?![\d])/g, '$1$2');
   s = s.replace(/electron[\s-]?volts?/gi, 'eV');
+  // "30 revolutions in 20 s" → a frequency (count ÷ time), keeping the data's precision
+  s = s.replace(/(\d+(?:\.\d+)?)\s*(?:complete\s+)?(?:revolutions|rotations|revs|orbits|oscillations|cycles|turns|laps|circuits)\s+(?:in|every|each)\s+(\d+(?:\.\d+)?)\s*(s|sec|seconds?|min|minutes?|h|hours?)\b/gi, (m, n, t, u) => {
+    const secs = Number(t) * (/^m/i.test(u) ? 60 : /^h/i.test(u) ? 3600 : 1);
+    const f = Number(n) / secs;
+    const sf = Math.max(2, Math.min(countSigFigs(n), countSigFigs(t)));
+    void m;
+    return `a frequency of ${Number(f.toPrecision(sf + 1))} Hz`;
+  });
+  // Energy-level words → principal quantum numbers, keeping the words as context
+  const ORD: Record<string, number> = { first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6, seventh: 7 };
+  s = s.replace(/\b(first|second|third|fourth|fifth|sixth)\s+excited\s+state\b(?!\s*\(n)/gi, (m, w) => `${m} (n = ${ORD[w.toLowerCase()] + 1})`);
+  s = s.replace(/\b(first|second|third|fourth|fifth|sixth|seventh)\s+(?:energy\s+)?(?:level|orbit|shell)\b(?!\s*\(n)/gi, (m, w) => `${m} (n = ${ORD[w.toLowerCase()]})`);
+  s = s.replace(/\bground\s+state\b(?!\s*\(n)/gi, 'ground state (n = 1)');
+  // Turns ratio "1:20" → primary and secondary turns
+  s = s.replace(/turns\s+ratio\s+(?:of\s+)?(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)/gi, (_m, a, b2) => `turns ratio with the primary coil having ${a} turns and the secondary coil having ${b2} turns`);
   s = s.replace(/light[\s-]?years?/gi, 'ly');
   s = s.replace(/(\d)\s*degrees?\b/gi, '$1°');
   s = s.replace(/(\d)\s*deg\b/gi, '$1°');
