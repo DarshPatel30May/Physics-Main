@@ -616,7 +616,11 @@ function mapScenario(s: ResolvedScenario, qs: Extracted[], text: string, particl
 }
 
 function pickTarget(s: ResolvedScenario, tp: TargetPhrase, knowns: Record<string, KnownInput>): string | null {
-  return pickTargetFrom(s, tp, (k) => !!knowns[k] && knowns[k].origin !== 'assumed');
+  const k = pickTargetFrom(s, tp, (key) => !!knowns[key] && knowns[key].origin !== 'assumed');
+  // Decay with the amount measured as an activity (initial activity 400 Bq): "the activity after
+  // 24 days" is the amount remaining, not λN for a separate number of nuclei.
+  if (s.id === 'decay' && k === 'A' && /bq|becquerel|decays? per/i.test(knowns.N0?.unit ?? '') && !knowns.Nt) return 'Nt';
+  return k;
 }
 
 function pickTargetFrom(s: ResolvedScenario, tp: TargetPhrase, isKnown: (k: string) => boolean): string | null {

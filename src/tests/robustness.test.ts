@@ -1,6 +1,7 @@
 /**
  * Robustness: every corpus question is re-solved in several rewritten forms that students
- * commonly paste — LaTeX-typeset (as copied from typeset papers), multi-line "(a)" layout,
+ * commonly paste — LaTeX-typeset (as copied from typeset papers), display maths on separate lines, hard-wrapped
+ * PDF text, multi-line "(a)" layout,
  * and different command words. The answer must not change.
  */
 import { describe, it, expect } from 'vitest';
@@ -10,6 +11,7 @@ import { CASES as B2 } from './corpus/batch2';
 import { CASES as B3 } from './corpus/batch3';
 import { CASES as B4 } from './corpus/batch4';
 import { CASES as B5 } from './corpus/batch5';
+import { CASES as B6 } from './corpus/batch6';
 import type { Case } from './corpus/types';
 
 const UNITS = ['m/s²', 'm/s', 'm s-1', 'km/h', 'W/m²', 'lines per mm', 'nm', 'mm', 'cm', 'km', 'μm', 'μs', 'μC', 'mT', 'kV', 'keV', 'MeV', 'eV', 'kg', 'MW', 'mW', 'kW', 'Hz', 'Bq', 'Ω', 'm²', 'm', 's', 'g', 'N', 'J', 'V', 'T', 'A', 'W', 'C', 'u', 'K', 'days', 'day', 'years', 'hours', 'minutes', 'turns'];
@@ -35,12 +37,22 @@ function toParts(q: string): string {
   return m ? `${m[1]}\n(a) ${m[2]}` : `(a) ${q}`;
 }
 
+/** Every value typeset as display maths on its own line, as copied from a typeset paper. */
+function toDisplay(q: string): string {
+  return toLatex(q).replace(/\\\((.*?)\\\)/g, (_m, x) => `\n\\[\n${x}\n\\]\n`);
+}
+
+/** Lines hard-wrapped every six words, as copied out of a PDF. */
+function wrapLines(q: string): string {
+  return q.split(' ').map((w, i) => (i > 0 && i % 6 === 0 ? '\n' + w : (i > 0 ? ' ' : '') + w)).join('');
+}
+
 function swapVerb(q: string): string {
   return q.replace(/\bCalculate\b/, 'Determine');
 }
 
-const ALL: Array<[string, Case]> = [...B1.map((c) => ['b1', c] as [string, Case]), ...B2.map((c) => ['b2', c] as [string, Case]), ...B3.map((c) => ['b3', c] as [string, Case]), ...B4.map((c) => ['b4', c] as [string, Case]), ...B5.map((c) => ['b5', c] as [string, Case])];
-const VARIANTS: Array<[string, (q: string) => string]> = [['latex', toLatex], ['parts', toParts], ['verb', swapVerb], ['latex+parts', (q) => toParts(toLatex(q))]];
+const ALL: Array<[string, Case]> = [...B1.map((c) => ['b1', c] as [string, Case]), ...B2.map((c) => ['b2', c] as [string, Case]), ...B3.map((c) => ['b3', c] as [string, Case]), ...B4.map((c) => ['b4', c] as [string, Case]), ...B5.map((c) => ['b5', c] as [string, Case]), ...B6.map((c) => ['b6', c] as [string, Case])];
+const VARIANTS: Array<[string, (q: string) => string]> = [['latex', toLatex], ['parts', toParts], ['verb', swapVerb], ['latex+parts', (q) => toParts(toLatex(q))], ['display', toDisplay], ['wrapped', wrapLines]];
 
 function check(cse: Case, text: string) {
   const r = smartSolve(text);

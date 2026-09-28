@@ -2,9 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { smartSolve } from '../nlp/smart';
 import { CASES as C4 } from './corpus/batch4';
 import { CASES as C5 } from './corpus/batch5';
-const CASES = [...C4, ...C5];
+import { CASES as C6 } from './corpus/batch6';
+const CASES = [...C4, ...C5, ...C6];
 
-describe('HSC-style questions — batches 4 and 5', () => {
+describe('HSC-style questions — batches 4–6', () => {
   for (const cse of CASES) {
     it(`${cse.q.slice(0, 90).replace(/\n/g, ' ')}… → ${cse.target}`, () => {
       const r = smartSolve(cse.q);

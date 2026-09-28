@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { smartSolve, SmartResult, SmartPart } from '../../nlp/smart';
+import { stripLatex, joinBrokenLines } from '../../nlp/extract';
 import { useApp } from '../state';
 import { Tex } from '../components/Tex';
 import { formatAnswer, formatQty, siUnitOf } from '../format';
@@ -68,7 +69,7 @@ export function SmartSolverPage() {
       target: p.target,
       unitHint: p.unitHint,
       source: `Smart Solver · Module ${r.scenario.module} · ${TOPIC_BY_ID[r.scenario.topic]?.label ?? ''}`,
-      question: r.input,
+      question: joinBrokenLines(stripLatex(r.input)),
       directions: r.directions,
       extraNotes: notes,
       autoNotes: r.autoFilled.map((a) => a.note),

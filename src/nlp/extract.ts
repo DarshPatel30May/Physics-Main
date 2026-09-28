@@ -30,10 +30,37 @@ const LATEX_SYMBOLS: Record<string, string> = {
 };
 
 /** Convert LaTeX / Markdown maths (as pasted from typeset questions) into plain text. */
+/** A line that starts a new question part: "(a)", "b)", "(ii)", "Part c". */
+const PART_START = /^\s*(\(?[a-h]\)|\(?(i|ii|iii|iv|v|vi)\)|part\b|question\b|q\d)/i;
+
+/** Words that begin a new instruction/sentence even when the line above has no full stop. */
+const NEW_SENTENCE = /^\s*(calculate|determine|find|what|how|show|explain|estimate|assum|use|take|given|ignore|neglect|hence|then|evaluate|state|justify|compare|sketch|draw|describe|identify|if|[-•*]\s)/i;
+
+/**
+ * Join lines broken in the middle of a sentence (PDF copy-paste, typeset maths on its own line).
+ * A single line break is kept only where a sentence ends, a new part starts ("(b)") or a new
+ * instruction starts ("Calculate …"); blank lines are always kept.
+ */
+export function joinBrokenLines(s: string): string {
+  return s.replace(/([^\n])[ \t]*\n[ \t]*(?=[^\s])/g, (m: string, prev: string, off: number, str: string) => {
+    const after = str.slice(off + m.length);
+    if (/[.?!:;]/.test(prev) || PART_START.test(after)) return m;
+    if (NEW_SENTENCE.test(after) && !/\b(the|a|an|of|from|to|at|is|are|was|were|and|by|with|in|on|for|as|that|its|has|have|than|into|onto|between)$/i.test(str.slice(Math.max(0, off - 12), off + 1))) return m;
+    return prev + ' ';
+  });
+}
+
 export function stripLatex(input: string): string {
   let s = input;
   if (!/[\\$]|\^\{|_\{/.test(s)) return s;
-  s = s.replace(/\$\$|\\\[|\\\]|\\\(|\\\)|\$/g, ' ');
+  // Math delimiters are inline: display maths (\[ n = 4 \]) sits on its own line but is part of the
+  // sentence around it. Keep a line break only where the sentence really ends or a new part starts.
+  s = s.replace(/\s*(?:\$\$|\\\[|\\\]|\\\(|\\\)|\$)\s*/g, (m: string, off: number, str: string) => {
+    if (!m.includes('\n')) return ' ';
+    const before = str.slice(0, off).trimEnd();
+    const after = str.slice(off + m.length);
+    return /[.?!:]$/.test(before) || PART_START.test(after) ? '\n' : ' ';
+  });
   s = s.replace(/\\[,;:! ]/g, ' ').replace(/~/g, ' ');
   s = s.replace(/\\%/g, '%');
   s = s.replace(/\^\s*\{?\s*\\circ(?:\s*\})?/g, '°');
@@ -59,8 +86,7 @@ export function stripLatex(input: string): string {
 }
 
 export function normaliseQuestion(text: string): string {
-  let s = stripLatex(text)
-    .replace(/\r/g, '')
+  let s = joinBrokenLines(stripLatex(text).replace(/\r/g, ''))
     .replace(/[‐‑‒–—−]/g, '-')
     .replace(/µ/g, 'μ')
     .replace(/Ω/g, 'Ω')
@@ -68,6 +94,8 @@ export function normaliseQuestion(text: string): string {
     .replace(/[‘’]/g, "'")
     .replace(/ /g, ' ');
   s = normaliseSuperscripts(s);
+  // "n=4" and "n = 4" read the same.
+  s = s.replace(/([^\s=<>!])[ \t]*=[ \t]*(?=[^\s=])/g, '$1 = ');
   // A minus sign separated from its number (e.g. typeset "− 1.51 eV") belongs to the number.
   s = s.replace(/(^|[\s(=:])-\s+(?=\d)/g, '$1-');
   // scientific notation variants: 3.00 × 10^8, 3.00 x 10^-19, 3.00 X 10 -19, 3.00*10^8
@@ -174,7 +202,7 @@ export function extractQuantities(text: string): Extracted[] {
     const start = m.index;
     let end = start + rawNum.length;
     // Skip nuclide notation such as U-235 / carbon-14 (the number is a mass number, not a measurement)
-    if (/[A-Za-z]-$/.test(text.slice(Math.max(0, start - 2), start)) && !/e-$/.test(text.slice(Math.max(0, start - 2), start))) { re.lastIndex = end; continue; }
+    if (/[A-Za-z]-$/.test(text.slice(Math.max(0, start - 2), start)) && !/[\d.][eE]-$/.test(text.slice(Math.max(0, start - 3), start))) { re.lastIndex = end; continue; }
     // Skip list labels like "(a)" / question numbers "1." at the start of a line
     if (/^\d+\.$/.test(text.slice(start, end + 1)) && (start === 0 || text[start - 1] === '\n')) continue;
     const mant = rawNum.replace(/e[-+]?\d+$/i, '');

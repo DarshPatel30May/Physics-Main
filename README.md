@@ -18,7 +18,7 @@ npm run dev        # opens http://localhost:5173
 Other scripts:
 
 ```bash
-npm test           # 1556 automated tests (vitest)
+npm test           # 1999 automated tests (vitest)
 npm run build      # type-check + production build into dist/
 npm run preview    # serve the production build
 ```
@@ -90,19 +90,19 @@ src/tests/    automated tests
 - The chain solver works forward from the known data, pruning to the steps the answer needs. It defers square-root rearrangements where the sign is ambiguous, picks the physically meaningful root and reports the rejected ones, and checks over-specified data for consistency.
 - Assumptions such as “perpendicular” are only used when a problem cannot be solved without them, and they are always printed.
 
-## Tests (1556 passing)
+## Tests (1999 passing)
 
 - **Formula database:** every rearrangement of every formula is checked automatically by dimensional analysis and by random numeric round-trips.
 - **Multi-step chains, units, parsing and sig figs:** includes the reference cases from the brief: proton qvB, λ = 500 nm → f → E, γ at 0.80c, orbital speed, and 120 g → 15 g after 3 half-lives.
-- **170 HSC-style worded questions** across Modules 5–8 (five audit batches, including 2025 HSC Q28), with answers checked against independently computed values.
-- **Robustness variants:** every corpus question is re-run as LaTeX (`\( … \)`, `\times 10^{…}`, `\text{…}`), split into labelled parts, and reworded, and must give the same answer.
+- **185 HSC-style worded questions** across Modules 5–8 (six audit batches, including 2025 HSC Q28), with answers checked against independently computed values.
+- **Robustness variants:** every corpus question is re-run as inline LaTeX (`\( … \)`, `\times 10^{…}`, `\text{…}`), as display maths on separate lines (`\[ n = 4 \]`), as hard-wrapped text copied from a PDF, split into labelled parts, and reworded, and must give the same answer.
 - **Physical validation:** v ≥ c, sin θ > 1, total internal reflection, below-threshold light, negative masses and temperatures, efficiency above 100%, growing decay, non-integer quantum numbers, inconsistent data.
 - **UI smoke tests** render every page and calculator in jsdom.
 
 ## Limitations
 
 - **Formula sheet content was entered from knowledge, not downloaded.** The NESA website was blocked by the build environment's network policy, so the official PDFs could not be fetched. The formula and constant lists were compiled from the content of the NESA syllabus, formulae/data sheet and past papers as known at build time. Check them against your printed data sheet: the Constants page shows every value exactly as used.
-- **The Smart Solver is rule-based.** It handles standard HSC phrasing well, including LaTeX-formatted questions (tested on 170 questions plus reworded and LaTeX variants). Unusual wording can map a value to the wrong variable, so always check the “Interpretation” table. You can switch the calculation type, or use the topic calculator instead.
+- **The Smart Solver is rule-based.** It handles standard HSC phrasing well, including LaTeX-formatted questions (tested on 185 questions plus reworded and LaTeX variants). Unusual wording can map a value to the wrong variable, so always check the “Interpretation” table. You can switch the calculation type, or use the topic calculator instead.
 - **Multi-part questions stay within one calculation type.** A part that needs a different calculation type has to be solved separately.
 - **Diagrams and graphs are not read without the optional AI reader.** OCR reads text only; values that appear only in a diagram must be typed or confirmed. Reading data off a printed graph is not automated, apart from the photoelectric data-fit tool, which takes typed data points.
 - **Directions are only worked out when stated.** Direction reasoning uses the directions given in the text (or confirmed from a diagram); otherwise it explains the rule to apply.
